@@ -562,6 +562,7 @@
                         <div id="acct-out" class="space-y-1.5">
                             <button id="btn-google-login" class="hidden btn-press w-full py-2 rounded-lg bg-white text-slate-900 text-xs font-semibold flex items-center justify-center gap-2"><i class="fa-brands fa-google"></i> Entrar com Google</button>
                             <p id="g-note" class="hidden text-[10px] text-amber-300/90 leading-snug">Login Google ainda não configurado: define FIREBASE_CONFIG no código.</p>
+                            <p id="g-error" class="hidden text-[10px] text-rose-300 leading-snug"></p>
                         </div>
                         <div id="acct-in" class="hidden flex flex-wrap items-center gap-2.5">
                             <img id="acct-pic" class="w-9 h-9 rounded-full border border-slate-600" alt="">
@@ -1845,6 +1846,9 @@
             ["Idioma", "Language", "Idioma", "Langue"],
             ["Terminar sessão", "Sign out", "Cerrar sesión", "Se déconnecter"],
             ["Login Google ainda não configurado: define FIREBASE_CONFIG no código.", "Google login not configured yet: set FIREBASE_CONFIG in the code.", "Login de Google sin configurar: define FIREBASE_CONFIG en el código.", "Connexion Google non configurée : définis FIREBASE_CONFIG dans le code."],
+            ["Permite pop-ups para este site e tenta outra vez.", "Allow pop-ups for this site and try again.", "Permite las ventanas emergentes para este sitio e inténtalo de nuevo.", "Autorise les pop-ups pour ce site et réessaie."],
+            ["Domínio não autorizado no Firebase.", "Domain not authorized in Firebase.", "Dominio no autorizado en Firebase.", "Domaine non autorisé dans Firebase."],
+            ["Não foi possível entrar. Tenta outra vez.", "Could not sign in. Try again.", "No se pudo iniciar sesión. Inténtalo de nuevo.", "Connexion impossible. Réessaie."],
             ["Nv. #/#", "Lv. #/#", "Nv. #/#", "Niv. #/#"], ["Nv. #", "Lv. #", "Nv. #", "Niv. #"],
             ["MÁX", "MAX", "MÁX", "MAX"], ["Bloqueado", "Locked", "Bloqueado", "Verrouillé"],
             ["Por descobrir", "Undiscovered", "Por descubrir", "À découvrir"],
@@ -2199,6 +2203,12 @@
             fbAuth = { signOut: async () => { fbUser = null; renderAccount(); } };
         }
 
+        function showLoginError(msg) {
+            const el = document.getElementById('g-error');
+            el.textContent = msg;
+            el.classList.toggle('hidden', !msg);
+        }
+
         function signInGoogle() {
             if (FIREBASE_CONFIG.apiKey === 'demo') {
                 fbUser = DEMO_USER;
@@ -2207,10 +2217,15 @@
                 return;
             }
             if (!fbAuth) return;
+            // Só popup: o redirecionamento falha em navegadores que bloqueiam armazenamento de terceiros (ex.: GitHub Pages)
             const provider = new firebase.auth.GoogleAuthProvider();
+            showLoginError('');
             fbAuth.signInWithPopup(provider).catch(e => {
-                if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) fbAuth.signInWithRedirect(provider);
-                else setCloudStatus('Erro de sincronização');
+                const c = e && e.code;
+                if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return;
+                showLoginError(c === 'auth/popup-blocked' ? 'Permite pop-ups para este site e tenta outra vez.'
+                    : c === 'auth/unauthorized-domain' ? 'Domínio não autorizado no Firebase.'
+                    : 'Não foi possível entrar. Tenta outra vez.');
             });
         }
 
