@@ -57,6 +57,15 @@
         }
     </style>
 <style>
+        .zorp-float { animation: zfloat 3.4s ease-in-out infinite; }
+        @keyframes zfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .zorp-eyes { transform-box: fill-box; transform-origin: center; }
+        .zorp-blink .zorp-eyes { animation: zblink .22s ease-in-out 1; }
+        @keyframes zblink { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.08); } }
+        .zorp-shake svg { transform-origin: 50% 90%; animation: zshake .9s ease-in-out 1; }
+        @keyframes zshake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 45% { transform: rotate(8deg); } 70% { transform: rotate(-5deg); } }
+        .alien-bob { animation: bob 2.2s ease-in-out infinite; }
+        @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         .tut-ring { outline: 2px solid #fbbf24; outline-offset: 2px; animation: tutpulse 1.2s ease-in-out infinite; }
         @keyframes tutpulse { 0%, 100% { outline-color: rgba(251,191,36,.9); } 50% { outline-color: rgba(251,191,36,.25); } }
     </style>
@@ -134,6 +143,9 @@
             <div id="tap-hint" class="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-900/60 border border-slate-800/50 text-[11px] text-slate-400 pointer-events-none transition-opacity duration-500">
                 <i class="fa-regular fa-hand-pointer mr-1 text-cyan-400"></i> Toca ou arrasta na câmara para agitar átomos
             </div>
+
+            <!-- Zorp: mascote sempre presente na galáxia -->
+            <div id="zorp-pet" class="zorp-float absolute bottom-2 left-2 w-12 h-12 z-10 pointer-events-none"></div>
 
             <!-- Sobrecarga (habilidade ativa) -->
             <button id="btn-overclock" class="btn-press absolute bottom-2.5 right-3 z-10 px-3 py-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-rose-600 border border-amber-300/40 text-[11px] font-bold text-white shadow-lg flex items-center gap-1.5 disabled:from-slate-800 disabled:to-slate-900 disabled:border-slate-700 disabled:text-slate-400">
@@ -213,6 +225,8 @@
                     <h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-purple-300"><i class="fa-solid fa-right-left mr-1"></i>Trocar Éter por Joules</h3>
                     <div id="shop-exchange" class="grid grid-cols-2 gap-2"></div>
                 </div>
+
+                <div id="crates-box" class="space-y-2"></div>
 
                 <div class="space-y-2">
                     <h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-teal-300"><i class="fa-solid fa-gem mr-1"></i>Comprar Éter</h3>
@@ -309,7 +323,7 @@
                                 <h3 class="text-sm font-semibold text-white">Ressonância Harmónica</h3>
                                 <span id="lvl-resonance" class="text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">Nv. 0</span>
                             </div>
-                            <p class="text-xs text-slate-400">Aumenta toda a produção de Energia em +25% por nível.</p>
+                            <p class="text-xs text-slate-400">Aumenta toda a produção de Energia em +8% por nível.</p>
                         </div>
                     </div>
                     <button id="btn-upg-resonance" class="btn-press px-3 py-2 rounded-xl bg-slate-800 hover:bg-cyan-600 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-mono-num font-bold text-white border border-slate-700 shrink-0 min-w-[82px] text-center">
@@ -394,7 +408,7 @@
                 <div class="flex items-center justify-between px-1">
                     <div>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Tabela de Síntese</h2>
-                        <p class="text-[11px] text-slate-500">Cada novo elemento descoberto dá +10% de produção global.</p>
+                        <p class="text-[11px] text-slate-500">Cada novo elemento descoberto dá +3% de produção global.</p>
                     </div>
                     <span id="discovery-counter" class="text-xs font-mono-num font-bold px-2.5 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60">1 / 30</span>
                 </div>
@@ -430,6 +444,7 @@
                         </div>
                     </div>
 
+                    <p id="bb-req" class="hidden text-[11px] text-amber-300/90 text-center leading-snug"></p>
                     <button id="btn-trigger-bigbang" class="btn-press w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:opacity-60 font-bold text-xs uppercase tracking-wider text-white shadow-lg border border-purple-400/30">
                         <i class="fa-solid fa-atom mr-1.5"></i> Iniciar Big Bang (+<span id="btn-matter-gain">0</span> Matéria)
                     </button>
@@ -489,14 +504,35 @@
             </button>
         </nav>
 
-        <!-- TUTORIAL -->
-        <div id="tutorial-card" class="hidden absolute left-3 right-3 bottom-[4.5rem] z-40 p-3 rounded-2xl bg-slate-900/95 border border-amber-400/50 shadow-2xl space-y-2">
-            <div class="flex items-center justify-between">
-                <span id="tut-count" class="text-[10px] font-mono-num uppercase tracking-wider text-amber-300"></span>
-                <button id="tut-skip" class="text-[10px] text-slate-400 hover:text-white underline">Saltar tutorial</button>
+        <!-- ZORP: tutorial e apresentação das abas -->
+        <div id="tutorial-card" class="hidden absolute left-3 right-3 bottom-[4.5rem] z-40 flex items-end gap-2">
+            <div id="alien-avatar" class="alien-bob w-14 h-14 shrink-0"></div>
+            <div class="flex-1 p-3 rounded-2xl rounded-bl-sm bg-slate-900/95 border border-amber-400/50 shadow-2xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <span id="tut-count" class="text-[10px] font-mono-num uppercase tracking-wider text-amber-300"></span>
+                    <button id="tut-skip" class="text-[10px] text-slate-400 hover:text-white underline">Saltar tutorial</button>
+                </div>
+                <p id="tut-text" class="text-xs text-white leading-snug"></p>
+                <button id="tut-next" class="hidden btn-press w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Concluir</button>
             </div>
-            <p id="tut-text" class="text-xs text-white leading-snug"></p>
-            <button id="tut-next" class="hidden btn-press w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Concluir</button>
+        </div>
+
+        <!-- ABERTURA DA CAIXA (roleta) -->
+        <div id="modal-crate" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-5">
+            <div class="w-full max-w-xs rounded-3xl bg-slate-900 border border-amber-400/40 p-4 text-center space-y-3 shadow-2xl">
+                <div id="crate-title" class="text-xs font-bold uppercase tracking-wider text-amber-300"></div>
+                <div class="relative w-full h-[84px] overflow-hidden rounded-xl bg-slate-950 border border-slate-700">
+                    <div id="crate-track" class="absolute top-1 left-0 flex gap-1" style="will-change:transform"></div>
+                    <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-amber-400/90 -translate-x-1/2 pointer-events-none"></div>
+                </div>
+                <div id="crate-result" class="hidden space-y-2">
+                    <div id="crate-avatar" class="alien-bob w-24 h-24 mx-auto"></div>
+                    <div id="crate-name" class="text-lg font-bold text-white"></div>
+                    <div id="crate-rarity" class="text-xs font-bold uppercase tracking-wider"></div>
+                    <div id="crate-note" class="text-xs text-slate-300"></div>
+                    <button id="btn-crate-ok" class="btn-press w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Ótimo!</button>
+                </div>
+            </div>
         </div>
 
         <!-- TOAST DA LOJA -->
@@ -624,6 +660,29 @@
            ============================================================================ */
         // [símbolo, nome, cor]. A produção (4x por nível) e o raio são calculados abaixo.
         // Para ter mais elementos, basta acrescentar linhas no fim desta lista.
+        /* ---- EQUILÍBRIO: todos os valores que mexem na velocidade do jogo ficam aqui ---- */
+        const BALANCE = {
+            prodBase: 2.3,          // cada nível produz X vezes mais que o anterior (antes: 4)
+            discoveryPerTier: 0.03, // bónus global por elemento descoberto (antes: 10%)
+            resonancePerLvl: 0.08,  // Ressonância Harmónica por nível (antes: 25%)
+            tapBase: 0.10,          // energia por toque, em % do E/s (antes: 20%)
+            tapPerLvl: 0.02,        // + por nível de Toque Quântico (antes: 4%)
+            bindingPerLvl: 0.02,    // Energia de Ligação por nível (antes: 5%)
+            fissionPerLvl: 0.01,    // Cisão Atómica por nível (antes: 2%)
+            autoSpawnBase: 30,      // segundos entre átomos grátis no nível 0 da Síntese Contínua (antes: 14)
+            autoSpawnRatio: 0.9,    // multiplicador por nível (antes: 0.8)
+            autoSpawnMin: 2,        // intervalo mínimo em segundos (antes: 0.5)
+            gateTier: 16,           // a partir deste nível, descobrir um elemento novo custa energia
+            gateSeconds: 600,       // custo base = X segundos de produção de um átomo desse nível
+            gateGrowth: 1.25,       // dificuldade extra por cada nível acima do anterior
+            bbBlock: 10,            // cada Big Bang desbloqueia mais X elementos
+            timeGateTier: 25,       // a partir daqui, cada elemento novo só pode ser descoberto X horas depois do anterior
+            timeGateHours: 2,       // horas de espera para o primeiro elemento bloqueado
+            timeGateHoursPerTier: 0.25, // + horas por cada nível seguinte (o nível 50 espera ~8h)
+            costScale: 8,           // multiplica o custo de todas as melhorias de Joules (antes: 1)
+            cometSeconds: 60        // um cometa de energia dá X segundos de produção (antes: 150)
+        };
+
         const ELEMENT_DEFS = [
             ['H',  'Hidrogénio',         '#38bdf8'],
             ['He', 'Hélio',              '#34d399'],
@@ -654,6 +713,26 @@
             ['Bh', 'Buraco Negro',       '#94a3b8'],
             ['Qs', 'Quasar',             '#f0abfc'],
             ['Mv', 'Multiverso',         '#67e8f9'],
+            ['Hn', 'Hipernova',          '#fb923c'],
+            ['Mg', 'Magnetar',           '#38bdf8'],
+            ['Kn', 'Quilonova',          '#f472b6'],
+            ['Gx', 'Galáxia',            '#a78bfa'],
+            ['Ac', 'Aglomerado',         '#818cf8'],
+            ['Fl', 'Filamento',          '#67e8f9'],
+            ['Vz', 'Vazio Cósmico',      '#64748b'],
+            ['Ev', 'Horizonte de Eventos', '#fbbf24'],
+            ['Tp', 'Tempo',              '#34d399'],
+            ['Ep', 'Espaço',             '#22d3ee'],
+            ['Dm', 'Dimensão',           '#c084fc'],
+            ['Px', 'Paradoxo',           '#fb7185'],
+            ['Cs', 'Caos',               '#f87171'],
+            ['Od', 'Ordem',              '#4ade80'],
+            ['Eq', 'Eco Quântico',       '#2dd4bf'],
+            ['Cn', 'Consciência',        '#fde68a'],
+            ['Or', 'Origem',             '#f97316'],
+            ['Et', 'Eternidade',         '#e2e8f0'],
+            ['In', 'Infinito',           '#a5b4fc'],
+            ['α',  'Alfa',               '#facc15'],
             ['∞',  'Singularidade',      '#ffffff']
         ];
 
@@ -662,7 +741,7 @@
             symbol, name, color,
             baseRadius: Math.min(30, 13 + 2 * i),
             radius: Math.min(30, 13 + 2 * i),
-            baseProd: Math.pow(4, i)
+            baseProd: Math.pow(BALANCE.prodBase, i)
         }));
 
         const SAVE_KEY = 'alquimia_minimalista_save_v1';
@@ -740,7 +819,7 @@
         };
 
         /* Limites das melhorias normais (Joules). A Ressonância não tem limite. */
-        const UPGRADE_MAX = { capacity: 40, spawnTier: 13, autoMerge: 1, autoSpawn: 20 };
+        const UPGRADE_MAX = { capacity: 40, spawnTier: 45, autoMerge: 1, autoSpawn: 20 };
 
         /* Colisor Automático: compra única + interruptor ON/OFF (sem níveis). */
         const AUTO_MERGE_INTERVAL = 0.3; // segundos entre fusões automáticas
@@ -753,17 +832,17 @@
             tapPower: {
                 name: 'Toque Quântico', icon: 'fa-hand-pointer', max: 25, base: 250, growth: 2.2,
                 box: 'bg-sky-950/80 border-sky-700/40 text-sky-400',
-                desc: (l) => `Cada toque na câmara dá ${20 + l * 4}% do teu E/s.`
+                desc: (l) => `Cada toque na câmara dá ${Math.round((BALANCE.tapBase + l * BALANCE.tapPerLvl) * 100)}% do teu E/s.`
             },
             bindingEnergy: {
                 name: 'Energia de Ligação', icon: 'fa-link', max: 25, base: 400, growth: 2.5,
                 box: 'bg-orange-950/80 border-orange-700/40 text-orange-400',
-                desc: (l) => `Cada fusão liberta ${l * 5}% do teu E/s de imediato.`
+                desc: (l) => `Cada fusão liberta ${Math.round(l * BALANCE.bindingPerLvl * 100)}% do teu E/s de imediato.`
             },
             fission: {
                 name: 'Cisão Atómica', icon: 'fa-code-branch', max: 25, base: 800, growth: 2.7,
                 box: 'bg-lime-950/80 border-lime-700/40 text-lime-400',
-                desc: (l) => `${l * 2}% de chance de a síntese criar 2 átomos em vez de 1.`
+                desc: (l) => `${Math.round(l * BALANCE.fissionPerLvl * 100)}% de chance de a síntese criar 2 átomos em vez de 1.`
             },
             costCut: {
                 name: 'Síntese Eficiente', icon: 'fa-tags', max: 24, base: 600, growth: 2.4,
@@ -777,7 +856,7 @@
             discover: {
                 name: 'Explorador', icon: 'fa-compass', get: () => state.unlockedMaxTier,
                 text: (n) => `Descobre ${n} elementos`,
-                levels: [[3, 1], [6, 2], [10, 4], [15, 6], [20, 10], [25, 15], [30, 30]]
+                levels: [[3, 1], [6, 2], [10, 4], [15, 6], [20, 10], [25, 15], [30, 30], [35, 20], [40, 30], [45, 40], [50, 80]]
             },
             merges: {
                 name: 'Fundidor', icon: 'fa-compress', get: () => state.stats.totalMerges,
@@ -817,7 +896,7 @@
             isotopes: {
                 name: 'Colecionador de Isótopos', icon: 'fa-atom', get: () => Object.keys(state.isotopes).length,
                 text: (n) => `Apanha ${n} isótopos diferentes`,
-                levels: [[1, 1], [5, 3], [15, 8], [30, 20]]
+                levels: [[1, 1], [5, 3], [15, 8], [30, 20], [50, 40]]
             },
             research: {
                 name: 'Investigador', icon: 'fa-microscope', get: () => Object.values(state.research.levels).reduce((a, b) => a + b, 0),
@@ -1000,6 +1079,10 @@
                 autoMergeOn: true,
                 tutorialStep: 0,
                 injectTier: 0,
+                paidSessions: {},
+                tierLockUntil: 0,
+                skins: { owned: { default: true }, active: 'default', lastFree: '' },
+                tabIntroSeen: {},
                 daily: { date: '', missions: [], streak: 0, lastClaim: '' },
                 uiOpen: { reactor: false, adv: false, ether: false, research: false, compounds: false, compounds3: false },
                 isotopes: {},
@@ -1068,7 +1151,7 @@
             return UPGRADE_MAX[key];
         }
         function getMaxInjectTier() {
-            return Math.max(1, Math.min(1 + UPGRADE_MAX.spawnTier, 1 + state.upgrades.spawnTier, state.unlockedMaxTier));
+            return Math.max(1, Math.min(1 + UPGRADE_MAX.spawnTier, 1 + state.upgrades.spawnTier, state.unlockedMaxTier, getTierCap()));
         }
         function getStartingTier() {
             const max = getMaxInjectTier();
@@ -1077,7 +1160,7 @@
 
         function getSpawnCost() {
             const baseTier = getStartingTier();
-            const tierFactor = Math.pow(3.2, baseTier - 1);
+            const tierFactor = Math.pow(BALANCE.prodBase * 1.07, baseTier - 1); // custo acompanha a produção do nível
             return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), state.spawnsBought));
         }
 
@@ -1090,22 +1173,22 @@
             const lvl = state.upgrades[type];
             switch (type) {
                 case 'capacity':
-                    return Math.floor(50 * Math.pow(2.3, lvl));
+                    return Math.floor(BALANCE.costScale * 50 * Math.pow(2.3, lvl));
                 case 'spawnTier':
-                    return Math.floor(300 * Math.pow(5.5, lvl));
+                    return Math.floor(BALANCE.costScale * 300 * Math.pow(5.5, lvl));
                 case 'autoMerge':
-                    return 500; // compra única
+                    return Math.floor(BALANCE.costScale * 500); // compra única
                 case 'resonance':
-                    return Math.floor(100 * Math.pow(2.1, lvl));
+                    return Math.floor(BALANCE.costScale * 100 * Math.pow(2.1, lvl));
                 case 'autoSpawn':
-                    return Math.floor(500 * Math.pow(3.4, lvl));
+                    return Math.floor(BALANCE.costScale * 500 * Math.pow(3.4, lvl));
             }
             return 999999;
         }
 
         function getGlobalMultiplier() {
-            const discoveryBonus = 1 + (state.unlockedMaxTier - 1) * 0.10;
-            const resonanceBonus = 1 + state.upgrades.resonance * 0.25;
+            const discoveryBonus = 1 + (state.unlockedMaxTier - 1) * BALANCE.discoveryPerTier;
+            const resonanceBonus = 1 + state.upgrades.resonance * BALANCE.resonancePerLvl;
             const prestigeBonus = 1 + state.primordialMatter * 0.25;
             const kineticBonus = getKineticMultiplier(); // Up to 2.0x (mais com Maestria Cinética)
             const etherBonus = 1 + state.etherUpgrades.etherCore * 0.1;
@@ -1131,11 +1214,11 @@
         }
 
         function getFissionChance() {
-            return state.upgrades.fission * 0.02 + (hasCompound('olivine') ? 0.1 : 0);
+            return state.upgrades.fission * BALANCE.fissionPerLvl + (hasCompound('olivine') ? 0.1 : 0);
         }
 
         function getTapMultiplier() {
-            return 0.2 + state.upgrades.tapPower * 0.04;
+            return BALANCE.tapBase + state.upgrades.tapPower * BALANCE.tapPerLvl;
         }
 
         /* Éter nas fusões: muito raro e só em níveis altos (0,15% no nível 9, até 1,2%).
@@ -1196,7 +1279,7 @@
         }
 
         function getStartParticles() {
-            const t = Math.min(ELEMENTS.length, 1 + state.etherUpgrades.quantumMemory, state.unlockedMaxTier);
+            const t = Math.min(ELEMENTS.length, 1 + state.etherUpgrades.quantumMemory, state.unlockedMaxTier, getTierCap());
             return [{ tier: t }, { tier: t }];
         }
 
@@ -1279,7 +1362,7 @@
         /* ---- Melhorias extra do laboratório (Joules) ---- */
         function getLabExtraCost(key) {
             const c = LAB_EXTRA[key];
-            return Math.floor(c.base * Math.pow(c.growth, state.upgrades[key]));
+            return Math.floor(BALANCE.costScale * c.base * Math.pow(c.growth, state.upgrades[key]));
         }
 
         function buyLabExtra(key) {
@@ -1556,7 +1639,7 @@
 
             if (!done) {
                 // Rajada de Energia: ~2,5 minutos de produção (mínimo 50 E)
-                const amount = Math.max(50, getEnergyPerSecond() * 150 * yieldMult);
+                const amount = Math.max(50, getEnergyPerSecond() * BALANCE.cometSeconds * yieldMult);
                 addEnergy(amount);
                 spawnFloatingText(c.x, c.y - 24, `Rajada +${formatNum(amount)} E`, '#fde68a');
             }
@@ -1615,42 +1698,34 @@
             }
         }
 
-        function updateReactions() {
-            for (const c of COMPOUNDS3) {
-                if (state.compounds[c.id]) continue;
-                const ps = c.t.map(t => liveParticles.find(p => p.tier === t && !p.merging));
-                if (ps.some(q => !q)) continue;
-                const close = (x, y) => Math.hypot(x.x - y.x, x.y - y.y) <= ELEMENTS[x.tier - 1].radius + ELEMENTS[y.tier - 1].radius + 6;
-                if ([close(ps[0], ps[1]), close(ps[1], ps[2]), close(ps[0], ps[2])].filter(Boolean).length < 2) continue;
-                liveParticles = liveParticles.filter(p => !ps.includes(p));
-                syncLiveParticlesToState();
-                state.compounds[c.id] = true;
-                const mx = (ps[0].x + ps[1].x + ps[2].x) / 3, my = (ps[0].y + ps[1].y + ps[2].y) / 3;
-                spawnSparkBurst(mx, my, '#a78bfa', 32);
-                spawnFloatingText(mx, my - 24, `${tr('Composto')}: ${tr(c.name)} (+${Math.round(c.bonus * 100)}%)`, '#a78bfa');
-                grantEther(2, mx, my - 46);
-                sfx.playDiscovery();
-                saveGame();
-                return;
+        // Compostos: junta-se com um botão, se os elementos existirem na galáxia (só uma vez por composto)
+        function findCompoundParts(c) {
+            const used = [];
+            for (const t of c.t) {
+                const q = liveParticles.find(x => x.tier === t && !x.merging && !used.includes(x));
+                if (!q) return null;
+                used.push(q);
             }
-            for (const c of COMPOUNDS) {
-                if (state.compounds[c.id]) continue;
-                const a = liveParticles.find(p => p.tier === c.a && !p.merging);
-                const b = liveParticles.find(p => p.tier === c.b && !p.merging && p !== a);
-                if (!a || !b) continue;
-                const ra = ELEMENTS[a.tier - 1].radius, rb = ELEMENTS[b.tier - 1].radius;
-                if (Math.hypot(a.x - b.x, a.y - b.y) > ra + rb + 6) continue;
-                liveParticles = liveParticles.filter(p => p !== a && p !== b);
-                syncLiveParticlesToState();
-                state.compounds[c.id] = true;
-                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-                spawnSparkBurst(mx, my, '#38bdf8', 24);
-                spawnFloatingText(mx, my - 24, `${tr('Composto')}: ${tr(c.name)} (+${Math.round(c.bonus * 100)}%)`, '#38bdf8');
-                grantEther(1, mx, my - 46);
-                sfx.playDiscovery();
-                saveGame();
-                break;
-            }
+            return used;
+        }
+
+        function synthesizeCompound(id) {
+            const c = ALL_COMPOUNDS.find(x => x.id === id);
+            if (!c || state.compounds[c.id]) return false;
+            const parts = findCompoundParts(c);
+            if (!parts) return false;
+            liveParticles = liveParticles.filter(p => !parts.includes(p));
+            syncLiveParticlesToState();
+            state.compounds[c.id] = true;
+            const adv = c.t.length === 3, col = adv ? '#a78bfa' : '#38bdf8';
+            const mx = parts.reduce((t, p) => t + p.x, 0) / parts.length, my = parts.reduce((t, p) => t + p.y, 0) / parts.length;
+            spawnSparkBurst(mx, my, col, adv ? 32 : 24);
+            spawnFloatingText(mx, my - 24, `${tr('Composto')}: ${tr(c.name)} (+${Math.round(c.bonus * 100)}%)`, col);
+            grantEther(adv ? 2 : 1, mx, my - 46);
+            sfx.playDiscovery();
+            saveGame();
+            updateUI();
+            return true;
         }
 
         function updateDrones(dt) {
@@ -1846,6 +1921,51 @@
             ["Idioma", "Language", "Idioma", "Langue"],
             ["Terminar sessão", "Sign out", "Cerrar sesión", "Se déconnecter"],
             ["Login Google ainda não configurado: define FIREBASE_CONFIG no código.", "Google login not configured yet: set FIREBASE_CONFIG in the code.", "Login de Google sin configurar: define FIREBASE_CONFIG en el código.", "Connexion Google non configurée : définis FIREBASE_CONFIG dans le code."],
+            ["Estabilizar", "Stabilize", "Estabilizar", "Stabiliser"],
+            ["Descobre o elemento", "Discover element", "Descubre el elemento", "Découvre l'élément"],
+            ["para poderes fazer o Big Bang.", "to be able to do the Big Bang.", "para poder hacer el Big Bang.", "pour pouvoir faire le Big Bang."],
+            ["Big Bang pronto: desbloqueia os próximos", "Big Bang ready: unlocks the next", "Big Bang listo: desbloquea los siguientes", "Big Bang prêt : débloque les"],
+            ["elementos.", "elements.", "elementos.", "prochains éléments."],
+            ["Faz um Big Bang para desbloquear mais elementos", "Do a Big Bang to unlock more elements", "Haz un Big Bang para desbloquear más elementos", "Fais un Big Bang pour débloquer plus d'éléments"],
+            ["Nova galáxia!", "New galaxy!", "¡Nueva galaxia!", "Nouvelle galaxie !"],
+            ["Vamos lá!", "Let's go!", "¡Vamos!", "C'est parti !"], ["Entendi", "Got it", "Entendido", "Compris"], ["Ótimo!", "Great!", "¡Genial!", "Super !"],
+            ["Olá! Eu sou o Zorp, um alienígena curioso. Vou ensinar-te a criar um universo!", "Hi! I'm Zorp, a curious alien. I'll teach you how to create a universe!", "¡Hola! Soy Zorp, un alienígena curioso. ¡Te enseñaré a crear un universo!", "Salut ! Je suis Zorp, un extraterrestre curieux. Je vais t'apprendre à créer un univers !"],
+            ["Toca em Injetar para criar o teu primeiro átomo de Hidrogénio.", "Tap Inject to create your first Hydrogen atom.", "Toca Inyectar para crear tu primer átomo de Hidrógeno.", "Touche Injecter pour créer ton premier atome d'Hydrogène."],
+            ["A energia serve para comprar melhorias. Abre Melhorias do Reator e compra a Contenção Magnética.", "Energy buys upgrades. Open Reactor Upgrades and buy Magnetic Containment.", "La energía sirve para comprar mejoras. Abre Mejoras del Reactor y compra Contención magnética.", "L'énergie sert à acheter des améliorations. Ouvre Améliorations du réacteur et achète Confinement magnétique."],
+            ["Muito bem! A cada 10 elementos precisas de fazer um Big Bang para desbloquear os seguintes. Eu aviso-te quando houver novidades!", "Well done! Every 10 elements you need a Big Bang to unlock the next ones. I'll tell you when there's news!", "¡Muy bien! Cada 10 elementos necesitas un Big Bang para desbloquear los siguientes. ¡Te aviso cuando haya novedades!", "Bravo ! Tous les 10 éléments, il faut un Big Bang pour débloquer les suivants. Je te préviens quand il y a du nouveau !"],
+            ["Aqui ficam todos os elementos que descobriste. Funde átomos iguais para desbloquear novos!", "All the elements you've discovered are here. Fuse matching atoms to unlock new ones!", "Aquí están todos los elementos que descubriste. ¡Fusiona átomos iguales para desbloquear nuevos!", "Tous les éléments découverts sont ici. Fusionne des atomes identiques pour en débloquer !"],
+            ["Na Loja trocas Éter por Joules, compras pacotes e abres caixas com roupas novas para mim!", "In the Shop you trade Ether for Joules, buy packs and open crates with new outfits for me!", "En la Tienda cambias Éter por julios, compras paquetes y abres cajas con ropa nueva para mí.", "Dans la Boutique tu échanges Éther contre Joules, achètes des packs et ouvres des caisses avec de nouveaux costumes pour moi !"],
+            ["Completa conquistas e missões diárias para ganhares Éter. Volta todos os dias!", "Complete achievements and daily missions to earn Ether. Come back every day!", "Completa logros y misiones diarias para ganar Éter. ¡Vuelve todos los días!", "Accomplis des succès et missions quotidiennes pour gagner de l'Éther. Reviens chaque jour !"],
+            ["Aqui estão as receitas de compostos: quando tiveres os elementos na galáxia, toca em Juntar para ganhares bónus.", "Here are the compound recipes: when you have the elements in the galaxy, tap Join to earn bonuses.", "Aquí están las recetas de compuestos: cuando tengas los elementos en la galaxia, toca Unir para ganar bonos.", "Voici les recettes de composés : quand tu as les éléments dans la galaxie, touche Assembler pour gagner des bonus."],
+            ["Juntar", "Join", "Unir", "Assembler"],
+            ["O Big Bang reinicia o universo, mas dá-te Matéria Primordial e desbloqueia mais 10 elementos!", "The Big Bang restarts the universe, but gives you Primordial Matter and unlocks 10 more elements!", "El Big Bang reinicia el universo, pero te da Materia primordial y desbloquea 10 elementos más.", "Le Big Bang relance l'univers, mais te donne de la Matière primordiale et débloque 10 éléments de plus !"],
+            ["Caixas de skins", "Skin crates", "Cajas de skins", "Caisses de skins"], ["Coleção", "Collection", "Colección", "Collection"],
+            ["Caixa Grátis", "Free Crate", "Caja gratis", "Caisse gratuite"], ["Caixa Cósmica", "Cosmic Crate", "Caja cósmica", "Caisse cosmique"], ["Caixa Estelar", "Stellar Crate", "Caja estelar", "Caisse stellaire"],
+            ["Abrir grátis", "Open for free", "Abrir gratis", "Ouvrir gratuitement"], ["Volta amanhã", "Back tomorrow", "Vuelve mañana", "Reviens demain"],
+            ["Nova skin!", "New skin!", "¡Skin nueva!", "Nouveau skin !"], ["Repetida: +# Æ", "Duplicate: +# Æ", "Repetida: +# Æ", "Doublon : +# Æ"],
+            ["Comum", "Common", "Común", "Commun"], ["Incomum", "Uncommon", "Poco común", "Peu commun"],
+            ["Zorp Menta", "Mint Zorp", "Zorp menta", "Zorp menthe"], ["Zorp Pêssego", "Peach Zorp", "Zorp melocotón", "Zorp pêche"], ["Zorp Lilás", "Lilac Zorp", "Zorp lila", "Zorp lilas"], ["Zorp Cósmico", "Cosmic Zorp", "Zorp cósmico", "Zorp cosmique"],
+            ["Sem garantia · até Rara", "No guarantee · up to Rare", "Sin garantía · hasta Rara", "Sans garantie · jusqu'à Rare"],
+            ["1 skin garantida · até Épica", "1 guaranteed skin · up to Epic", "1 skin garantizada · hasta Épica", "1 skin garanti · jusqu'à Épique"],
+            ["1 skin garantida · mínimo Rara · Lendária possível", "1 guaranteed skin · at least Rare · Legendary possible", "1 skin garantizada · mínimo Rara · Legendaria posible", "1 skin garanti · minimum Rare · Légendaire possible"],
+            ["Sem sorte desta vez!", "No luck this time!", "¡Sin suerte esta vez!", "Pas de chance cette fois !"],
+            ["Volta amanhã para tentar outra vez.", "Come back tomorrow to try again.", "Vuelve mañana para intentarlo de nuevo.", "Reviens demain pour réessayer."], ["Rara", "Rare", "Rara", "Rare"], ["Épica", "Epic", "Épica", "Épique"], ["Lendária", "Legendary", "Legendaria", "Légendaire"],
+            ["Zorp Clássico", "Classic Zorp", "Zorp clásico", "Zorp classique"], ["Zorp Celeste", "Sky Zorp", "Zorp celeste", "Zorp céleste"], ["Zorp Laço", "Bow Zorp", "Zorp con lazo", "Zorp à nœud"],
+            ["Zorp Cientista", "Scientist Zorp", "Zorp científico", "Zorp scientifique"], ["Zorp Astronauta", "Astronaut Zorp", "Zorp astronauta", "Zorp astronaute"],
+            ["Zorp Punk", "Punk Zorp", "Zorp punk", "Zorp punk"], ["Zorp Rei", "King Zorp", "Zorp rey", "Zorp roi"], ["Estabilizando", "Stabilizing", "Estabilizando", "Stabilisation"],
+            ["Hipernova", "Hypernova", "Hipernova", "Hypernova"], ["Magnetar", "Magnetar", "Magnetar", "Magnétar"], ["Quilonova", "Kilonova", "Kilonova", "Kilonova"],
+            ["Galáxia", "Galaxy", "Galaxia", "Galaxie"], ["Aglomerado", "Cluster", "Cúmulo", "Amas"], ["Filamento", "Filament", "Filamento", "Filament"],
+            ["Vazio Cósmico", "Cosmic Void", "Vacío cósmico", "Vide cosmique"], ["Horizonte de Eventos", "Event Horizon", "Horizonte de sucesos", "Horizon des événements"],
+            ["Tempo", "Time", "Tiempo", "Temps"], ["Espaço", "Space", "Espacio", "Espace"], ["Dimensão", "Dimension", "Dimensión", "Dimension"],
+            ["Paradoxo", "Paradox", "Paradoja", "Paradoxe"], ["Caos", "Chaos", "Caos", "Chaos"], ["Ordem", "Order", "Orden", "Ordre"],
+            ["Eco Quântico", "Quantum Echo", "Eco cuántico", "Écho quantique"], ["Consciência", "Consciousness", "Conciencia", "Conscience"],
+            ["Origem", "Origin", "Origen", "Origine"], ["Eternidade", "Eternity", "Eternidad", "Éternité"], ["Infinito", "Infinity", "Infinito", "Infini"],
+            ["Alfa", "Alpha", "Alfa", "Alpha"],
+            ["Entra com a tua conta Google para comprar.", "Sign in with your Google account to buy.", "Inicia sesión con tu cuenta de Google para comprar.", "Connecte-toi avec ton compte Google pour acheter."],
+            ["Não foi possível iniciar o pagamento.", "Could not start the payment.", "No se pudo iniciar el pago.", "Impossible de démarrer le paiement."],
+            ["Compra cancelada.", "Purchase canceled.", "Compra cancelada.", "Achat annulé."],
+            ["Pagamento confirmado!", "Payment confirmed!", "¡Pago confirmado!", "Paiement confirmé !"],
+            ["Não foi possível confirmar o pagamento.", "Could not confirm the payment.", "No se pudo confirmar el pago.", "Impossible de confirmer le paiement."],
             ["Permite pop-ups para este site e tenta outra vez.", "Allow pop-ups for this site and try again.", "Permite las ventanas emergentes para este sitio e inténtalo de nuevo.", "Autorise les pop-ups pour ce site et réessaie."],
             ["Domínio não autorizado no Firebase.", "Domain not authorized in Firebase.", "Dominio no autorizado en Firebase.", "Domaine non autorisé dans Firebase."],
             ["Não foi possível entrar. Tenta outra vez.", "Could not sign in. Try again.", "No se pudo iniciar sesión. Inténtalo de nuevo.", "Connexion impossible. Réessaie."],
@@ -1944,9 +2064,9 @@
             ["Aumenta a capacidade máxima da câmara (+2 espaços).", "Increases the chamber's maximum capacity (+2 slots).", "Aumenta la capacidad máxima de la cámara (+2 espacios).", "Augmente la capacité maximale de la chambre (+2 places)."],
             ["Gera átomos diretamente num nível superior.", "Creates atoms directly at a higher level.", "Genera átomos directamente en un nivel superior.", "Crée des atomes directement à un niveau supérieur."],
             ["Funde elementos iguais quando chocam na câmara.", "Fuses matching elements when they collide.", "Fusiona elementos iguales cuando chocan.", "Fusionne les éléments identiques quand ils se heurtent."],
-            ["Aumenta toda a produção de Energia em +25% por nível.", "Increases all Energy production by +25% per level.", "Aumenta toda la producción de energía un +25% por nivel.", "Augmente toute la production d'énergie de +25% par niveau."],
+            ["Aumenta toda a produção de Energia em +8% por nível.", "Increases all Energy production by +8% per level.", "Aumenta toda la producción de energía un +8% por nivel.", "Augmente toute la production d'énergie de +8% par niveau."],
             ["Gera partículas gratuitamente a cada X segundos se houver espaço.", "Creates particles for free every X seconds if there is room.", "Genera partículas gratis cada X segundos si hay espacio.", "Crée des particules gratuitement toutes les X secondes s'il y a de la place."],
-            ["Cada novo elemento descoberto dá +10% de produção global.", "Each newly discovered element gives +10% global production.", "Cada elemento nuevo descubierto da +10% de producción global.", "Chaque nouvel élément découvert donne +10% de production globale."],
+            ["Cada novo elemento descoberto dá +3% de produção global.", "Each newly discovered element gives +3% global production.", "Cada elemento nuevo descubierto da +3% de producción global.", "Chaque nouvel élément découvert donne +3% de production globale."],
             ["O Éter é raro. Obtém-no em conquistas, ao descobrir novos elementos, em cada Big Bang e, com uma chance muito pequena, em fusões de nível 9+ e em cometas.", "Ether is rare. Earn it from achievements, new element discoveries, every Big Bang and, with a very small chance, from level 9+ fusions and comets.", "El Éter es raro. Consíguelo con logros, al descubrir elementos, en cada Big Bang y, con muy poca probabilidad, en fusiones de nivel 9+ y cometas.", "L'Éther est rare. Gagne-le avec les succès, les découvertes, chaque Big Bang et, avec très peu de chance, via les fusions de niveau 9+ et les comètes."],
             ["Os Joules dos pacotes e das trocas equivalem a um tempo da tua produção atual (com um mínimo garantido), por isso acompanham o teu progresso.", "Joules from packs and trades equal a length of your current production (with a guaranteed minimum), so they keep up with your progress.", "Los julios de los paquetes y cambios equivalen a un tiempo de tu producción actual (con un mínimo garantizado), así que acompañan tu progreso.", "Les joules des packs et échanges équivalent à une durée de ta production actuelle (avec un minimum garanti), ils suivent donc ta progression."],
             ["Câmara:", "Chamber:", "Cámara:", "Chambre :"], ["Colisor Ativo", "Collider Active", "Colisor activo", "Collisionneur actif"],
@@ -2010,8 +2130,8 @@
             ["Abre Melhorias do Reator e compra a Contenção Magnética para ter mais espaço.", "Open Reactor Upgrades and buy Magnetic Containment for more room.", "Abre Mejoras del Reactor y compra Contención magnética para tener más espacio.", "Ouvre Améliorations du réacteur et achète Confinement magnétique pour plus de place."],
             ["Muito bem! Continua a fundir: novas abas vão aparecer à medida que descobres elementos.", "Well done! Keep fusing: new tabs appear as you discover elements.", "¡Muy bien! Sigue fusionando: aparecerán pestañas nuevas al descubrir elementos.", "Bravo ! Continue de fusionner : de nouveaux onglets apparaissent au fil des découvertes."],
             ["Injetar:", "Inject:", "Inyectar:", "Injecter :"],
-            ["Cada composto dá +4% de produção permanente.", "Each compound gives +4% permanent production.", "Cada compuesto da +4% de producción permanente.", "Chaque composé donne +4% de production permanente."],
-            ["Cada composto avançado dá +6% de produção permanente e um efeito especial.", "Each advanced compound gives +6% permanent production and a special effect.", "Cada compuesto avanzado da +6% de producción permanente y un efecto especial.", "Chaque composé avancé donne +6% de production permanente et un effet spécial."],
+            ["Cada composto dá +4% de produção permanente. Só se junta uma vez, com os elementos presentes na galáxia.", "Each compound gives +4% permanent production. It can only be joined once, with the elements present in the galaxy.", "Cada compuesto da +4% de producción permanente. Solo se une una vez, con los elementos presentes en la galaxia.", "Chaque composé donne +4% de production permanente. On ne l'assemble qu'une fois, avec les éléments présents dans la galaxie."],
+            ["Cada composto avançado dá +6% de produção permanente e um efeito especial. Só se junta uma vez, com os elementos presentes na galáxia.", "Each advanced compound gives +6% permanent production and a special effect. It can only be joined once, with the elements present in the galaxy.", "Cada compuesto avanzado da +6% de producción permanente y un efecto especial. Solo se une una vez, con los elementos presentes en la galaxia.", "Chaque composé avancé donne +6% de production permanente et un effet spécial. On ne l'assemble qu'une fois, avec les éléments présents dans la galaxie."],
             ["Entrar com Google", "Sign in with Google", "Iniciar sesión con Google", "Se connecter avec Google"],
             ["Sincronizar agora", "Sync now", "Sincronizar ahora", "Synchroniser"],
             ["A sincronizar…", "Syncing…", "Sincronizando…", "Synchronisation…"],
@@ -2248,7 +2368,7 @@
                     fbAuth.onAuthStateChanged(u => {
                         fbUser = u;
                         renderAccount();
-                        if (u) cloudSync(false, true);
+                        if (u) cloudSync(false, true).then(redeemPayment);
                     });
                 }
                 setInterval(() => cloudPush(false), 60000);
@@ -2278,22 +2398,26 @@
                     ${c.t.map(x => recipeBadge(ELEMENTS[x - 1])).join('<span class="text-[11px] text-slate-500">+</span>')}
                     <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
                     <span class="text-xs text-white truncate">${c.name}</span><span class="text-[10px] text-slate-500">(${c.f})</span></div>
-                    <span id="rc-c-st-${c.id}" class="text-[11px] font-mono-num font-bold shrink-0 text-slate-500"><i id="rc-c-ok-${c.id}" class="fa-solid fa-check hidden"></i></span></div>${c.effect ? `<div class="text-[10px] text-slate-400 px-2 -mt-1 pb-1">${c.effect}</div>` : ''}`;
+                    <span id="rc-c-st-${c.id}" class="text-[11px] font-mono-num font-bold shrink-0 text-slate-500"><button id="rc-btn-${c.id}" class="btn-press px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 text-[11px] font-bold text-white">Juntar</button><i id="rc-c-ok-${c.id}" class="fa-solid fa-check hidden"></i></span></div>${c.effect ? `<div class="text-[10px] text-slate-400 px-2 -mt-1 pb-1">${c.effect}</div>` : ''}`;
             });
 
             document.getElementById('recipes-list').innerHTML =
-                head('compounds', 'Compostos', 'text-sky-300', 'A + B') + `<div id="acc-body-compounds" class="hidden space-y-1.5">${descCard('sky', 'Cada composto dá +4% de produção permanente.')}${cmpRows[2]}</div>` +
-                head('compounds3', 'Compostos Avançados', 'text-violet-300', 'A + B + C') + `<div id="acc-body-compounds3" class="hidden space-y-1.5">${descCard('violet', 'Cada composto avançado dá +6% de produção permanente e um efeito especial.')}${cmpRows[3]}</div>` +
+                head('compounds', 'Compostos', 'text-sky-300', 'A + B') + `<div id="acc-body-compounds" class="hidden space-y-1.5">${descCard('sky', 'Cada composto dá +4% de produção permanente. Só se junta uma vez, com os elementos presentes na galáxia.')}${cmpRows[2]}</div>` +
+                head('compounds3', 'Compostos Avançados', 'text-violet-300', 'A + B + C') + `<div id="acc-body-compounds3" class="hidden space-y-1.5">${descCard('violet', 'Cada composto avançado dá +6% de produção permanente e um efeito especial. Só se junta uma vez, com os elementos presentes na galáxia.')}${cmpRows[3]}</div>` +
                 `<div class="p-3 rounded-2xl bg-slate-900/75 border border-yellow-900/50 flex items-center justify-between gap-3">
                     <div class="min-w-0"><h3 class="text-sm font-semibold text-yellow-300">Isótopos</h3>
                     <p class="text-xs text-slate-400">Cada fusão tem 1% de chance de criar um isótopo raro: produz x5.</p></div>
                     <span id="rc-iso" class="text-[11px] font-mono-num px-2 py-1 rounded-full bg-yellow-950 text-yellow-300 border border-yellow-800/60 shrink-0">0/30</span></div>`;
+            ALL_COMPOUNDS.forEach(c => document.getElementById(`rc-btn-${c.id}`).addEventListener('click', () => synthesizeCompound(c.id)));
         }
 
         function updateRecipesUI() {
             if (document.getElementById('tab-recipes').classList.contains('hidden')) return;
             ALL_COMPOUNDS.forEach(c => {
                 const done = !!state.compounds[c.id];
+                const jb = document.getElementById(`rc-btn-${c.id}`);
+                jb.classList.toggle('hidden', done);
+                jb.disabled = done || !findCompoundParts(c);
                 document.getElementById(`rc-c-${c.id}`).classList.toggle('opacity-60', !done);
                 const st = document.getElementById(`rc-c-st-${c.id}`);
                 st.classList.toggle('text-emerald-300', done);
@@ -2322,7 +2446,7 @@
         }
 
         /* ---- Painel de testes (põe DEBUG_AVAILABLE = false antes de publicar) ---- */
-        const DEBUG_AVAILABLE = true;
+        const DEBUG_AVAILABLE = false;
         const DEBUG_ACTIONS = [
             ['dbg-energy', '+1h de Joules', () => addEnergy(Math.max(1000, getEnergyPerSecond() * 3600))],
             ['dbg-energy-x', 'Joules x100', () => { state.energy = Math.max(state.energy * 100, 1e6); }],
@@ -2387,7 +2511,7 @@
             'tab-shop': () => state.unlockedMaxTier >= 3,
             'tab-achievements': () => state.unlockedMaxTier >= 4,
             'tab-recipes': () => state.unlockedMaxTier >= 5,
-            'tab-prestige': () => state.stats.bigBangs > 0 || state.runEnergy >= 10000
+            'tab-prestige': () => state.stats.bigBangs > 0 || state.unlockedMaxTier >= 8
         };
         const TAB_NAMES = { 'tab-elements': 'Elementos', 'tab-shop': 'Loja', 'tab-achievements': 'Conquistas', 'tab-recipes': 'Receitas', 'tab-prestige': 'Big Bang' };
         let tabBtns = {}, knownTabs = null;
@@ -2421,12 +2545,20 @@
         }
 
         const TUTORIAL = [
-            { text: 'Toca em Injetar para criar o teu primeiro átomo.', done: () => state.spawnsBought >= 1, target: () => '#btn-spawn' },
+            { text: 'Olá! Eu sou o Zorp, um alienígena curioso. Vou ensinar-te a criar um universo!', btn: 'Vamos lá!', target: () => null },
+            { text: 'Toca em Injetar para criar o teu primeiro átomo de Hidrogénio.', done: () => state.spawnsBought >= 1, target: () => '#btn-spawn' },
             { text: 'Toca na câmara para agitar os átomos: cada toque dá energia.', done: () => state.stats.taps >= 3, target: () => '#chamber-box' },
             { text: 'Com 2 átomos iguais, toca em Fundir Átomos para criar um elemento novo.', done: () => state.stats.totalMerges >= 1, target: () => '#btn-merge-manual' },
-            { text: 'Abre Melhorias do Reator e compra a Contenção Magnética para ter mais espaço.', done: () => state.stats.upgradesBought >= 1, target: () => state.uiOpen.reactor ? '#btn-upg-capacity' : '[data-acc="reactor"]' },
-            { text: 'Muito bem! Continua a fundir: novas abas vão aparecer à medida que descobres elementos.', final: true, target: () => null }
+            { text: 'A energia serve para comprar melhorias. Abre Melhorias do Reator e compra a Contenção Magnética.', done: () => state.stats.upgradesBought >= 1, target: () => state.uiOpen.reactor ? '#btn-upg-capacity' : '[data-acc="reactor"]' },
+            { text: 'Muito bem! A cada 10 elementos precisas de fazer um Big Bang para desbloquear os seguintes. Eu aviso-te quando houver novidades!', final: true, btn: 'Concluir', target: () => null }
         ];
+        const TAB_INTRO = {
+            'tab-elements': 'Aqui ficam todos os elementos que descobriste. Funde átomos iguais para desbloquear novos!',
+            'tab-shop': 'Na Loja trocas Éter por Joules, compras pacotes e abres caixas com roupas novas para mim!',
+            'tab-achievements': 'Completa conquistas e missões diárias para ganhares Éter. Volta todos os dias!',
+            'tab-recipes': 'Aqui estão as receitas de compostos: quando tiveres os elementos na galáxia, toca em Juntar para ganhares bónus.',
+            'tab-prestige': 'O Big Bang reinicia o universo, mas dá-te Matéria Primordial e desbloqueia mais 10 elementos!'
+        };
         let tutRing = null;
 
         function setTutRing(sel) {
@@ -2443,31 +2575,82 @@
             updateTutorial();
         }
 
+        function pendingTabIntro() {
+            return Object.keys(TAB_INTRO).find(i => TAB_UNLOCK[i]() && !state.tabIntroSeen[i]);
+        }
+
+        function tutNext() {
+            if (state.tutorialStep < TUTORIAL.length) {
+                if (TUTORIAL[state.tutorialStep].final) state.tutorialStep = 99; else state.tutorialStep++;
+            } else {
+                const id = pendingTabIntro();
+                if (id) state.tabIntroSeen[id] = true;
+            }
+            saveGame();
+            updateTutorial();
+        }
+
         function setupTutorial() {
             document.getElementById('tut-skip').addEventListener('click', endTutorial);
-            document.getElementById('tut-next').addEventListener('click', endTutorial);
+            document.getElementById('tut-next').addEventListener('click', tutNext);
+        }
+
+        // Mascote na galáxia: pisca e abana a cabeça de vez em quando
+        let petKey = '';
+        function updateZorpPet() {
+            const k = state.skins.active;
+            if (petKey === k) return;
+            petKey = k;
+            document.getElementById('zorp-pet').innerHTML = alienSVG(k);
+        }
+        function setupZorpPet() {
+            const pet = document.getElementById('zorp-pet');
+            const rnd = (a, b) => a + Math.random() * (b - a);
+            const blink = () => { pet.classList.add('zorp-blink'); setTimeout(() => pet.classList.remove('zorp-blink'), 260); setTimeout(blink, rnd(3500, 8000)); };
+            const shake = () => { pet.classList.add('zorp-shake'); setTimeout(() => pet.classList.remove('zorp-shake'), 950); setTimeout(shake, rnd(20000, 45000)); };
+            setTimeout(blink, rnd(2000, 5000));
+            setTimeout(shake, rnd(12000, 25000));
+            updateZorpPet();
+        }
+
+        let alienKey = '';
+        function setAlienAvatar() {
+            const k = state.skins.active;
+            if (alienKey === k) return;
+            alienKey = k;
+            document.getElementById('alien-avatar').innerHTML = alienSVG(k);
         }
 
         function updateTutorial() {
             const card = document.getElementById('tutorial-card');
-            let st = state.tutorialStep;
-            while (st < TUTORIAL.length && !TUTORIAL[st].final && TUTORIAL[st].done()) st++;
-            state.tutorialStep = st;
-            if (st >= TUTORIAL.length) {
-                card.classList.add('hidden');
-                setTutRing(null);
-                return;
+            if (state.tabIntroSeen.legacy) { // save antigo: não repete as apresentações das abas já abertas
+                Object.keys(TAB_UNLOCK).forEach(id => { if (TAB_UNLOCK[id]()) state.tabIntroSeen[id] = true; });
+                delete state.tabIntroSeen.legacy;
             }
-            const step = TUTORIAL[st];
+            let st = state.tutorialStep;
+            while (st < TUTORIAL.length && TUTORIAL[st].done && TUTORIAL[st].done()) st++;
+            state.tutorialStep = st;
+            let msg = null;
+            if (st < TUTORIAL.length) {
+                msg = { key: 't' + st, text: TUTORIAL[st].text, count: `Passo ${st + 1} de ${TUTORIAL.length}`, btn: TUTORIAL[st].btn || '', skip: true, ring: TUTORIAL[st].target() };
+            } else {
+                const id = pendingTabIntro();
+                if (id) msg = { key: id, text: TAB_INTRO[id], count: TAB_NAMES[id], btn: 'Entendi', skip: false, ring: `[data-tab="${id}"]` };
+            }
+            if (!msg) { card.classList.add('hidden'); setTutRing(null); return; }
             card.classList.remove('hidden');
             const txt = document.getElementById('tut-text');
-            if (txt._k !== st) {
-                txt._k = st;
-                txt.textContent = step.text;
-                document.getElementById('tut-count').textContent = `Passo ${st + 1} de ${TUTORIAL.length}`;
+            if (txt._k !== msg.key) {
+                txt._k = msg.key;
+                txt.textContent = msg.text;
+                document.getElementById('tut-count').textContent = msg.count;
             }
-            document.getElementById('tut-next').classList.toggle('hidden', !step.final);
-            setTutRing(step.target());
+            document.getElementById('tut-skip').classList.toggle('hidden', !msg.skip);
+            const nb = document.getElementById('tut-next');
+            nb.classList.toggle('hidden', !msg.btn);
+            if (nb._b !== msg.btn) { nb._b = msg.btn; nb.textContent = msg.btn; }
+            setTutRing(msg.ring);
+            setAlienAvatar();
         }
 
         /* ---- Escolha do elemento a injetar (a partir do nível 2 do Injetor) ---- */
@@ -2624,6 +2807,250 @@
             }
         }
 
+        /* ---- Big Bang: cada um desbloqueia mais 10 elementos ---- */
+        function getTierCap() { return Math.min(ELEMENTS.length, BALANCE.bbBlock * (state.stats.bigBangs + 1)); }
+        function canBigBang() {
+            const cap = getTierCap();
+            return getPendingPrimordialMatter() > 0 && state.unlockedMaxTier >= cap;
+        }
+        function updateBigBangUI() {
+            const el = document.getElementById('bb-req'), cap = getTierCap();
+            let msg = '';
+            if (state.unlockedMaxTier < cap) {
+                msg = `${tr('Descobre o elemento')} ${cap} (${tr(ELEMENTS[cap - 1].name)}) ${tr('para poderes fazer o Big Bang.')}`;
+            } else if (cap < ELEMENTS.length && getPendingPrimordialMatter() > 0) {
+                msg = `${tr('Big Bang pronto: desbloqueia os próximos')} ${Math.min(BALANCE.bbBlock, ELEMENTS.length - cap)} ${tr('elementos.')}`;
+            }
+            if (el._v !== msg) { el._v = msg; el.textContent = msg; el.classList.toggle('hidden', !msg); }
+        }
+
+        /* ---- Galáxia de fundo: gerada a partir do número de Big Bangs ---- */
+        let galaxyCanvas = null, galaxyKey = '';
+        function buildGalaxy(w, h) {
+            const dpr = window.devicePixelRatio || 1;
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * dpr));
+            c.height = Math.max(1, Math.round(h * dpr));
+            const g = c.getContext('2d');
+            g.scale(dpr, dpr);
+            const rng = seededRng('galaxia' + state.stats.bigBangs);
+            const hue = Math.floor(rng() * 360);
+            g.fillStyle = '#02040c';
+            g.fillRect(0, 0, w, h);
+            for (let i = 0; i < 4; i++) {
+                const x = rng() * w, y = rng() * h, r = Math.max(w, h) * (0.3 + rng() * 0.4);
+                const gr = g.createRadialGradient(x, y, 0, x, y, r);
+                gr.addColorStop(0, `hsla(${i % 2 ? hue : (hue + 70 + rng() * 120) % 360},70%,45%,0.2)`);
+                gr.addColorStop(1, 'rgba(0,0,0,0)');
+                g.fillStyle = gr;
+                g.fillRect(0, 0, w, h);
+            }
+            const cx = w * (0.3 + rng() * 0.4), cy = h * (0.3 + rng() * 0.4);
+            const arms = 2 + Math.floor(rng() * 3), twist = 3 + rng() * 4, rot = rng() * Math.PI * 2, tilt = 0.4 + rng() * 0.4, R = Math.max(w, h) * 0.65;
+            for (let i = 0; i < 1400; i++) {
+                const t = Math.pow(rng(), 0.7), r = t * R, a = rot + (i % arms) * (Math.PI * 2 / arms) + t * twist;
+                const x = cx + Math.cos(a) * r + (rng() - 0.5) * r * 0.35, y = cy + Math.sin(a) * r * tilt + (rng() - 0.5) * r * 0.35;
+                g.fillStyle = `hsla(${hue + rng() * 70},85%,${70 + rng() * 25}%,${0.25 + rng() * 0.7})`;
+                g.beginPath();
+                g.arc(x, y, 0.4 + rng() * 1.3, 0, Math.PI * 2);
+                g.fill();
+            }
+            const core = g.createRadialGradient(cx, cy, 0, cx, cy, R * 0.25);
+            core.addColorStop(0, `hsla(${hue},90%,85%,0.85)`);
+            core.addColorStop(0.4, `hsla(${hue},80%,60%,0.25)`);
+            core.addColorStop(1, 'rgba(0,0,0,0)');
+            g.fillStyle = core;
+            g.fillRect(0, 0, w, h);
+            for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(255,255,255,${0.2 + rng() * 0.7})`; g.fillRect(rng() * w, rng() * h, 1, 1); }
+            return c;
+        }
+
+        /* ---- Zorp, o alienígena: desenho e skins ---- */
+        const ALIEN_SKINS = {
+            default: { name: 'Zorp Clássico',   rarity: 'common',    body: '#4ade80', acc: 'none' },
+            sky:     { name: 'Zorp Celeste',    rarity: 'common',    body: '#38bdf8', acc: 'none' },
+            rose:    { name: 'Zorp Laço',       rarity: 'common',    body: '#f472b6', acc: 'bow' },
+            mint:    { name: 'Zorp Menta',      rarity: 'uncommon',  body: '#2dd4bf', acc: 'cap' },
+            peach:   { name: 'Zorp Pêssego',    rarity: 'uncommon',  body: '#fdba74', acc: 'tie' },
+            lilac:   { name: 'Zorp Lilás',      rarity: 'uncommon',  body: '#a78bfa', acc: 'flower' },
+            nerd:    { name: 'Zorp Cientista',  rarity: 'rare',      body: '#a3e635', acc: 'glasses' },
+            dj:      { name: 'Zorp DJ',         rarity: 'rare',      body: '#c084fc', acc: 'headphones' },
+            astro:   { name: 'Zorp Astronauta', rarity: 'epic',      body: '#e2e8f0', acc: 'helmet' },
+            punk:    { name: 'Zorp Punk',       rarity: 'epic',      body: '#fb923c', acc: 'mohawk' },
+            king:    { name: 'Zorp Rei',        rarity: 'legendary', body: '#facc15', acc: 'crown' },
+            cosmic:  { name: 'Zorp Cósmico',    rarity: 'legendary', body: '#e879f9', acc: 'halo' }
+        };
+        const RARITY = {
+            common:    { name: 'Comum',    color: '#94a3b8' },
+            uncommon:  { name: 'Incomum',  color: '#4ade80' },
+            rare:      { name: 'Rara',     color: '#38bdf8' },
+            epic:      { name: 'Épica',    color: '#c084fc' },
+            legendary: { name: 'Lendária', color: '#fbbf24' }
+        };
+
+        function alienSVG(id) {
+            const k = ALIEN_SKINS[id] || ALIEN_SKINS.default;
+            const acc = {
+                none: '',
+                glasses: '<g stroke="#0f172a" stroke-width="2" fill="rgba(125,211,252,.35)"><circle cx="22" cy="30" r="8"/><circle cx="42" cy="30" r="8"/><path d="M30 30h4"/></g>',
+                crown: '<path d="M20 14l5 7 7-9 7 9 5-7v11H20z" fill="#fbbf24" stroke="#b45309" stroke-width="1.5"/>',
+                helmet: '<path d="M10 32a22 22 0 0 1 44 0" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="3"/>',
+                headphones: '<path d="M12 32a20 20 0 0 1 40 0" fill="none" stroke="#334155" stroke-width="4"/><rect x="7" y="29" width="7" height="12" rx="3" fill="#f472b6"/><rect x="50" y="29" width="7" height="12" rx="3" fill="#f472b6"/>',
+                bow: '<path d="M32 15l-9-5v10zM32 15l9-5v10z" fill="#f472b6"/><circle cx="32" cy="15" r="2.5" fill="#be185d"/>',
+                mohawk: '<path d="M25 15l3-9 4 8 4-8 3 9z" fill="#f43f5e"/>',
+                cap: '<path d="M16 24a16 14 0 0 1 32 0z" fill="#ef4444"/><rect x="14" y="23" width="36" height="4" rx="2" fill="#b91c1c"/><rect x="44" y="23" width="12" height="4" rx="2" fill="#b91c1c"/>',
+                tie: '<path d="M29 53l3-2 3 2-1 9h-4z" fill="#ef4444"/>',
+                flower: '<circle cx="46" cy="15" r="4" fill="#f472b6"/><circle cx="46" cy="15" r="1.6" fill="#fde047"/>',
+                halo: '<ellipse cx="32" cy="9" rx="12" ry="3.5" fill="none" stroke="#fde047" stroke-width="2.5"/>'
+            }[k.acc] || '';
+            return `<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <line x1="22" y1="14" x2="17" y2="4" stroke="${k.body}" stroke-width="3" stroke-linecap="round"/><circle cx="17" cy="4" r="3" fill="#fde047"/>
+                <line x1="42" y1="14" x2="47" y2="4" stroke="${k.body}" stroke-width="3" stroke-linecap="round"/><circle cx="47" cy="4" r="3" fill="#fde047"/>
+                <ellipse cx="32" cy="58" rx="12" ry="5" fill="${k.body}"/>
+                <ellipse cx="32" cy="32" rx="22" ry="20" fill="${k.body}"/>
+                <g class="zorp-eyes"><ellipse cx="22" cy="30" rx="6.5" ry="8.5" fill="#fff"/><ellipse cx="42" cy="30" rx="6.5" ry="8.5" fill="#fff"/>
+                <circle cx="23" cy="31" r="3.5" fill="#0f172a"/><circle cx="41" cy="31" r="3.5" fill="#0f172a"/></g>
+                <path d="M25 44q7 6 14 0" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>${acc}</svg>`;
+        }
+
+        /* ---- Caixas de skins ---- */
+        // A diária não garante skin e nunca dá épicas/lendárias. A Cósmica garante 1 skin (até Épica).
+        // A Estelar garante 1 skin (mínimo Rara) e é a única com Lendárias.
+        const CRATES = [
+            { id: 'free',   name: 'Caixa Grátis',  cost: 0,  hint: 'Sem garantia · até Rara',
+              odds: [['none', 0.40], ['common', 0.35], ['uncommon', 0.18], ['rare', 0.07]] },
+            { id: 'common', name: 'Caixa Cósmica', cost: 15, hint: '1 skin garantida · até Épica',
+              odds: [['common', 0.52], ['uncommon', 0.28], ['rare', 0.15], ['epic', 0.05]] },
+            { id: 'rare',   name: 'Caixa Estelar', cost: 60, hint: '1 skin garantida · mínimo Rara · Lendária possível',
+              odds: [['rare', 0.72], ['epic', 0.24], ['legendary', 0.04]] }
+        ];
+        const SKIN_REFUND = { common: 2, uncommon: 4, rare: 8, epic: 15, legendary: 40 }; // Éter devolvido se a skin for repetida
+
+        function rollSkin(odds) {
+            let r = Math.random(), pick = odds[odds.length - 1][0];
+            for (const [k, pr] of odds) { if (r < pr) { pick = k; break; } r -= pr; }
+            if (pick === 'none') return null;
+            const pool = Object.keys(ALIEN_SKINS).filter(id => ALIEN_SKINS[id].rarity === pick);
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        let crateSpinning = false;
+        function resetCrateSpin() { crateSpinning = false; }
+
+        function openCrate(id) {
+            const c = CRATES.find(x => x.id === id);
+            if (!c || crateSpinning) return null;
+            if (id === 'free') {
+                if (state.skins.lastFree === dayKey()) return null;
+                state.skins.lastFree = dayKey();
+            } else {
+                if (state.ether < c.cost) return null;
+                state.ether -= c.cost;
+            }
+            const skin = rollSkin(c.odds), dup = !!(skin && state.skins.owned[skin]);
+            if (skin) {
+                if (dup) grantEther(SKIN_REFUND[ALIEN_SKINS[skin].rarity]); else state.skins.owned[skin] = true;
+            }
+            playCrate(c, skin, dup);
+            saveGame();
+            updateUI();
+            return { skin, dup };
+        }
+
+        function crateTile(id) {
+            if (!id) return '<div class="shrink-0 w-[68px] h-[76px] rounded-lg bg-slate-800 border-b-4 border-slate-600 flex items-center justify-center text-2xl text-slate-500"><i class="fa-solid fa-xmark"></i></div>';
+            return `<div class="shrink-0 w-[68px] h-[76px] p-1 rounded-lg bg-slate-800 border-b-4" style="border-color:${RARITY[ALIEN_SKINS[id].rarity].color}"><div class="w-full h-14">${alienSVG(id)}</div></div>`;
+        }
+
+        // Roleta: a fita desliza e abranda até parar no prémio, e só depois se revela o resultado
+        function playCrate(c, skin, dup) {
+            crateSpinning = true;
+            const N = 36, WIN = 31, ITEM = 72;
+            const track = document.getElementById('crate-track');
+            track.innerHTML = Array.from({ length: N }, (_, i) => crateTile(i === WIN ? skin : rollSkin(c.odds))).join('');
+            document.getElementById('crate-title').textContent = c.name;
+            document.getElementById('crate-result').classList.add('hidden');
+            document.getElementById('modal-crate').classList.remove('hidden');
+            const vp = (track.parentElement && track.parentElement.clientWidth) || 280;
+            const target = WIN * ITEM + 34 - vp / 2 + (Math.random() - 0.5) * 36;
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0px)';
+            void track.offsetWidth;
+            track.style.transition = 'transform 4.6s cubic-bezier(0.12, 0.65, 0.12, 1)';
+            track.style.transform = `translateX(${-target}px)`;
+            setTimeout(() => revealCrate(skin, dup), 4800);
+        }
+
+        function revealCrate(skin, dup) {
+            crateSpinning = false;
+            const re = document.getElementById('crate-rarity');
+            if (skin) {
+                const k = ALIEN_SKINS[skin], r = RARITY[k.rarity];
+                document.getElementById('crate-avatar').innerHTML = alienSVG(skin);
+                document.getElementById('crate-name').textContent = k.name;
+                re.textContent = r.name;
+                re.style.color = r.color;
+                document.getElementById('crate-note').textContent = dup ? `Repetida: +${SKIN_REFUND[k.rarity]} Æ` : 'Nova skin!';
+                sfx.playDiscovery();
+            } else {
+                document.getElementById('crate-avatar').innerHTML = '<div class="w-full h-full flex items-center justify-center text-5xl text-slate-500"><i class="fa-regular fa-face-sad-tear"></i></div>';
+                document.getElementById('crate-name').textContent = 'Sem sorte desta vez!';
+                re.textContent = '';
+                document.getElementById('crate-note').textContent = 'Volta amanhã para tentar outra vez.';
+            }
+            document.getElementById('crate-result').classList.remove('hidden');
+        }
+
+        function equipSkin(id) {
+            if (!state.skins.owned[id]) return;
+            state.skins.active = id;
+            saveGame();
+            updateUI();
+        }
+
+        function buildCratesUI() {
+            const box = document.getElementById('crates-box');
+            let cr = '';
+            CRATES.forEach(c => {
+                cr += `<div class="p-2.5 rounded-2xl bg-slate-900/80 border border-amber-900/50 flex flex-col items-center gap-1.5 text-center">
+                    <i class="fa-solid fa-box-open text-lg text-amber-300"></i>
+                    <div class="text-[11px] font-semibold text-white leading-tight">${c.name}</div>
+                    <div class="text-[9px] text-slate-400 leading-tight">${c.hint}</div>
+                    <button id="crate-btn-${c.id}" class="btn-press w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-[11px] font-mono-num font-bold text-slate-950"></button></div>`;
+            });
+            let sk = '';
+            Object.keys(ALIEN_SKINS).forEach(id => {
+                const k = ALIEN_SKINS[id];
+                sk += `<button id="skin-${id}" class="btn-press p-1.5 rounded-xl bg-slate-900/80 border flex flex-col items-center gap-0.5" style="border-color:${RARITY[k.rarity].color}55">
+                    <div class="w-11 h-11">${alienSVG(id)}</div><div class="text-[9px] text-slate-300 leading-tight text-center">${k.name}</div></button>`;
+            });
+            box.innerHTML = `<h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-amber-300"><i class="fa-solid fa-box-open mr-1"></i>Caixas de skins</h3>
+                <div class="grid grid-cols-3 gap-2">${cr}</div>
+                <h3 class="px-1 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Coleção</h3>
+                <div class="grid grid-cols-4 gap-1.5">${sk}</div>`;
+            CRATES.forEach(c => document.getElementById(`crate-btn-${c.id}`).addEventListener('click', () => openCrate(c.id)));
+            Object.keys(ALIEN_SKINS).forEach(id => document.getElementById(`skin-${id}`).addEventListener('click', () => equipSkin(id)));
+            document.getElementById('btn-crate-ok').addEventListener('click', () => document.getElementById('modal-crate').classList.add('hidden'));
+        }
+
+        function updateCratesUI() {
+            if (document.getElementById('tab-shop').classList.contains('hidden')) return;
+            const set = (id, v) => { const e = document.getElementById(id); if (e._v !== v) { e._v = v; e.textContent = v; } };
+            const freeOk = state.skins.lastFree !== dayKey();
+            set('crate-btn-free', freeOk ? 'Abrir grátis' : 'Volta amanhã');
+            document.getElementById('crate-btn-free').disabled = !freeOk;
+            CRATES.slice(1).forEach(c => {
+                set(`crate-btn-${c.id}`, `${c.cost} Æ`);
+                document.getElementById(`crate-btn-${c.id}`).disabled = state.ether < c.cost;
+            });
+            Object.keys(ALIEN_SKINS).forEach(id => {
+                const el = document.getElementById(`skin-${id}`);
+                el.classList.toggle('opacity-30', !state.skins.owned[id]);
+                el.classList.toggle('ring-2', state.skins.active === id);
+                el.classList.toggle('ring-amber-400', state.skins.active === id);
+            });
+        }
+
         function hydrateState(parsed) {
             const base = getDefaultState();
             const s = Object.assign(base, parsed);
@@ -2638,6 +3065,9 @@
             s.uiOpen = Object.assign(getDefaultState().uiOpen, parsed.uiOpen || {});
             // Saves antigos com progresso não precisam do tutorial
             if (parsed.tutorialStep === undefined && ((parsed.spawnsBought || 0) > 0 || (parsed.stats && parsed.stats.totalMerges > 0))) s.tutorialStep = 99;
+            s.skins = Object.assign(getDefaultState().skins, parsed.skins || {});
+            s.skins.owned = Object.assign({ default: true }, s.skins.owned);
+            s.tabIntroSeen = parsed.tabIntroSeen || (s.tutorialStep >= 99 ? { legacy: true } : {});
             s.compounds = parsed.compounds || {};
             const oldEther = parsed.etherUpgrades || {};
             if (oldEther.overclockUnlock === undefined &&
@@ -2675,7 +3105,7 @@
            LOJA: compra de Éter e Joules (€) e troca Éter -> Joules
            ============================================================================ */
         // true = modo demonstração (dá os itens sem cobrar nada). Ver processPayment().
-        const SHOP_DEMO_MODE = true;
+        const SHOP_DEMO_MODE = false; // true só para testar a loja sem cobrar nada (nunca em público)
 
         const SHOP_ETHER_PACKS = [
             { eur: 0.99,  ether: 6 },
@@ -2728,9 +3158,71 @@
         /* PAGAMENTO: ponto único de integração.
            Em modo demo devolve sempre sucesso. Para vender a sério, liga aqui o teu fornecedor
            (Google Play Billing / Apple IAP / Stripe...) e valida a compra num servidor. */
+        // URL do servidor de pagamentos (ver payments-worker.js). Vazio = pagamentos reais desligados.
+        const PAYMENTS_API_URL = '';
+
         async function processPayment(kind, pack) {
             if (SHOP_DEMO_MODE) return true;
-            throw new Error('Pagamentos reais ainda não estão configurados.');
+            if (!PAYMENTS_API_URL) throw new Error('Pagamentos reais ainda não estão configurados.');
+            if (!fbUser || !fbUser.getIdToken) throw new Error('Entra com a tua conta Google para comprar.');
+            const list = kind === 'ether' ? SHOP_ETHER_PACKS : SHOP_JOULE_PACKS;
+            const packId = (kind === 'ether' ? 'e' : 'j') + list.indexOf(pack);
+            let d;
+            try {
+                const r = await fetch(`${PAYMENTS_API_URL}/checkout`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ packId, token: await fbUser.getIdToken() })
+                });
+                d = await r.json();
+                if (!r.ok || !d.url) throw new Error('checkout');
+            } catch (e) {
+                throw new Error('Não foi possível iniciar o pagamento.');
+            }
+            saveGame();
+            location.href = d.url; // página de pagamento segura do Stripe
+            return 'redirect';
+        }
+
+        function cleanPaymentUrl() {
+            try { history.replaceState(null, '', location.pathname); } catch (e) {}
+        }
+
+        // ao voltar do Stripe: ?paid=<sessão> (pago) ou ?canceled=1
+        let pendingPaid = null;
+        try { pendingPaid = new URLSearchParams(location.search).get('paid'); } catch (e) {}
+        function handlePaymentUrl() {
+            try {
+                if (new URLSearchParams(location.search).get('canceled')) {
+                    showShopToast('Compra cancelada.');
+                    cleanPaymentUrl();
+                }
+            } catch (e) {}
+        }
+
+        async function redeemPayment() {
+            if (!pendingPaid || !fbUser || !PAYMENTS_API_URL || !fbUser.getIdToken) return;
+            const session = pendingPaid;
+            if (state.paidSessions[session]) { pendingPaid = null; cleanPaymentUrl(); return; }
+            try {
+                const r = await fetch(`${PAYMENTS_API_URL}/redeem`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session, token: await fbUser.getIdToken() })
+                });
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.error || 'erro');
+                if (d.kind === 'ether') grantEther(SHOP_ETHER_PACKS[d.index].ether);
+                else state.energy += getShopJoules(SHOP_JOULE_PACKS[d.index]);
+                state.paidSessions[session] = Date.now();
+                pendingPaid = null;
+                saveGame();
+                cloudPush(true);
+                sfx.playDiscovery();
+                showShopToast('Pagamento confirmado!');
+                cleanPaymentUrl();
+                updateUI();
+            } catch (e) {
+                showShopToast('Não foi possível confirmar o pagamento.');
+            }
         }
 
         function showShopToast(msg) {
@@ -2840,7 +3332,8 @@
             const btn = document.getElementById('btn-shop-confirm');
             btn.disabled = true;
             try {
-                await processPayment(kind, pack);
+                const res = await processPayment(kind, pack);
+                if (res === 'redirect') return;
                 if (kind === 'ether') {
                     grantEther(pack.ether);
                     showShopToast(`+${pack.ether} Æ adicionados!`);
@@ -2965,6 +3458,7 @@
                 const newlyFound = newTier - state.unlockedMaxTier; // 1 Éter por elemento novo
                 state.unlockedMaxTier = newTier;
                 grantEther(newlyFound);
+                if (newTier >= BALANCE.timeGateTier) state.tierLockUntil = Date.now() + timeGateHours(newTier + 1) * 3600000;
                 sfx.playDiscovery();
                 showDiscoveryToast(newTier);
                 renderElementsCatalog();
@@ -3009,6 +3503,35 @@
             updateUI();
         }
 
+        // Energia necessária para "estabilizar" (descobrir) um elemento novo nos níveis altos
+        function getDiscoveryCost(tier) {
+            if (tier <= state.unlockedMaxTier || tier < BALANCE.gateTier || !ELEMENTS[tier - 1]) return 0;
+            return Math.floor(BALANCE.gateSeconds * ELEMENTS[tier - 1].baseProd * Math.pow(BALANCE.gateGrowth, tier - BALANCE.gateTier));
+        }
+
+        let stabTimer = 0;
+        function updateStabilizeHint(dt) {
+            stabTimer += dt;
+            if (stabTimer < 8) return;
+            stabTimer = 0;
+            const seen = {};
+            for (const p of liveParticles) { if (!p.merging && p.tier < ELEMENTS.length) seen[p.tier] = (seen[p.tier] || 0) + 1; }
+            const tiers = Object.keys(seen).map(Number).filter(t => seen[t] >= 2 && (getDiscoveryCost(t + 1) > state.energy || isTierLocked(t + 1) || t + 1 > getTierCap())).sort((a, b) => a - b);
+            if (!tiers.length) return;
+            const t = tiers[0] + 1, rect = canvas.parentElement.getBoundingClientRect();
+            const what = t > getTierCap() ? tr('Faz um Big Bang para desbloquear mais elementos') : isTierLocked(t) ? `${tr('Estabilizando')} ${tr(ELEMENTS[t - 1].name)}: ${fmtDur(state.tierLockUntil - Date.now())}`
+                : `${tr('Estabilizar')} ${tr(ELEMENTS[t - 1].name)}: ${formatNum(getDiscoveryCost(t))} E`;
+            spawnFloatingText((rect.width || 360) / 2, 60, what, '#fbbf24');
+        }
+
+        // Travão por tempo real: nos níveis altos, um elemento novo só se descobre algumas horas depois do anterior
+        function isTierLocked(tier) {
+            return tier > state.unlockedMaxTier && tier > BALANCE.timeGateTier && Date.now() < state.tierLockUntil;
+        }
+        function timeGateHours(tier) {
+            return BALANCE.timeGateHours + Math.max(0, tier - BALANCE.timeGateTier - 1) * BALANCE.timeGateHoursPerTier;
+        }
+
         function findMergeablePair() {
             const byTier = {};
             for (let i = 0; i < liveParticles.length; i++) {
@@ -3019,7 +3542,7 @@
             }
             const tiers = Object.keys(byTier).map(Number).sort((a, b) => a - b);
             for (const t of tiers) {
-                if (byTier[t].length >= 2) {
+                if (byTier[t].length >= 2 && t + 1 <= getTierCap() && getDiscoveryCost(t + 1) <= state.energy && !isTierLocked(t + 1)) {
                     return [byTier[t][0], byTier[t][1]];
                 }
             }
@@ -3028,11 +3551,18 @@
 
         function executeMerge(p1, p2) {
             if (!p1 || !p2 || p1.merging || p2.merging) return false;
+            const jumped = Math.random() < getFusionJumpChance();
+            let nextTier = Math.min(ELEMENTS.length, p1.tier + 1 + (jumped ? 1 : 0));
+            nextTier = Math.min(nextTier, getTierCap());
+            if (nextTier <= p1.tier) return false; // limite do Big Bang
+            // nos níveis com travão não há saltos que ultrapassem o próximo elemento por descobrir
+            if (state.unlockedMaxTier >= BALANCE.timeGateTier - 1) nextTier = Math.min(nextTier, Math.max(p1.tier + 1, state.unlockedMaxTier + 1));
+            if (isTierLocked(nextTier)) return false;
+            const gate = getDiscoveryCost(nextTier);
+            if (gate > state.energy) return false; // sem energia para estabilizar o elemento novo
+            state.energy -= gate;
             p1.merging = true;
             p2.merging = true;
-
-            const jumped = Math.random() < getFusionJumpChance();
-            const nextTier = Math.min(ELEMENTS.length, p1.tier + 1 + (jumped ? 1 : 0));
             mergeAnimations.push({
                 p1, p2,
                 nextTier,
@@ -3117,13 +3647,13 @@
 
             // 2b. Cometas, drones, reações e pesquisa
             updateComet(dt);
+            updateStabilizeHint(dt);
             updateDrones(dt);
-            updateReactions();
             updateResearch();
 
             // 3. Auto-Spawner Timer
             if (state.upgrades.autoSpawn > 0 && liveParticles.length < getMaxCapacity()) {
-                const interval = Math.max(0.5, 14 * Math.pow(0.8, state.upgrades.autoSpawn));
+                const interval = Math.max(BALANCE.autoSpawnMin, BALANCE.autoSpawnBase * Math.pow(BALANCE.autoSpawnRatio, state.upgrades.autoSpawn));
                 autoSpawnTimer += dt;
                 if (autoSpawnTimer >= interval) {
                     autoSpawnTimer = 0;
@@ -3185,7 +3715,7 @@
 
                     // Energia de Ligação: energia instantânea por fusão
                     if (state.upgrades.bindingEnergy > 0) {
-                        const bonus = getEnergyPerSecond() * 0.05 * state.upgrades.bindingEnergy;
+                        const bonus = getEnergyPerSecond() * BALANCE.bindingPerLvl * state.upgrades.bindingEnergy;
                         if (bonus > 0) {
                             addEnergy(bonus);
                             spawnFloatingText(midX, midY + 18, `+${formatNum(bonus)} E`, '#fb923c');
@@ -3207,8 +3737,13 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Subtle Grid Background inside Chamber
-            ctx.strokeStyle = 'rgba(30, 41, 59, 0.35)';
+            // Galáxia de fundo (muda a cada Big Bang)
+            const gk = `${Math.round(w)}x${Math.round(h)}|${state.stats.bigBangs}`;
+            if (galaxyKey !== gk && w > 0 && h > 0) { galaxyCanvas = buildGalaxy(w, h); galaxyKey = gk; }
+            if (galaxyCanvas) ctx.drawImage(galaxyCanvas, 0, 0, w, h);
+
+            // Grelha subtil por cima (fica mais pequena com a capacidade)
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.10)';
             ctx.lineWidth = 1;
             const step = Math.max(14, 36 * getChamberScale());
             for (let x = step; x < w; x += step) {
@@ -3504,6 +4039,8 @@
             updateResearchUI();
             updateRecipesUI();
             updateTabs();
+            updateZorpPet();
+            updateCratesUI();
             updateInjectPicker();
             updateTutorial();
             applyAccordions();
@@ -3518,10 +4055,11 @@
             document.getElementById('current-matter-bonus').textContent = `+${formatNum(state.primordialMatter * 25)}% Produção`;
             document.getElementById('pending-matter').textContent = `+${formatNum(pendingMatter)}`;
             document.getElementById('btn-matter-gain').textContent = formatNum(pendingMatter);
-            document.getElementById('btn-trigger-bigbang').disabled = pendingMatter <= 0;
+            document.getElementById('btn-trigger-bigbang').disabled = !canBigBang();
+            updateBigBangUI();
 
             const prestigeDot = document.getElementById('prestige-ready-dot');
-            if (pendingMatter > 0) {
+            if (canBigBang()) {
                 prestigeDot.classList.remove('hidden');
             } else {
                 prestigeDot.classList.add('hidden');
@@ -3610,10 +4148,11 @@
 
         function triggerBigBang() {
             const gain = getPendingPrimordialMatter();
-            if (gain <= 0) return;
+            if (gain <= 0 || !canBigBang()) return;
 
             const rect = canvas.parentElement.getBoundingClientRect();
             spawnSparkBurst(rect.width / 2, rect.height / 2, '#e879f9', 45);
+            spawnFloatingText(rect.width / 2, rect.height / 2 + 14, 'Nova galáxia!', '#e879f9');
             sfx.playDiscovery();
 
             state.primordialMatter += gain;
@@ -3648,14 +4187,17 @@
             buildLabExtras();
             buildAchievements();
             buildDailyUI();
+            buildCratesUI();
             buildResearchUI();
             buildRecipesUI();
             setupAccordions();
             buildShop();
             setupDebug();
+            handlePaymentUrl();
             setupTabs();
             setupInjectPicker();
             setupTutorial();
+            setupZorpPet();
             setupGoogle();
             setupLanguage();
             syncStateParticlesToLive();
