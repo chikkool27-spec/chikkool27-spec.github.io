@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alchemist</title>
+    <title>Elements: Cosmic Idle</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -80,7 +80,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></div>
-                    <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Alchemist</span>
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 truncate">Elements: Cosmic Idle</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <button id="btn-mute" class="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 flex items-center justify-center btn-press" title="Som">
@@ -427,18 +427,18 @@
                     <div>
                         <h2 class="text-base font-bold text-white">Colapso Cósmico (Big Bang)</h2>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Colapsa o teu universo atual para extrair <strong class="text-purple-300">Matéria Primordial</strong>. Reinicia a tua energia, átomos e melhorias normais em troca de um bónus permanente massivo.
+                            Colapsa o teu universo atual para ganhar um <strong class="text-purple-300">Multiplicador Cósmico</strong> permanente de produção. Reinicia a tua energia, átomos e melhorias normais e desbloqueia mais 10 elementos.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
-                            <div class="text-[10px] uppercase text-slate-400">Matéria Atual</div>
+                            <div class="text-[10px] uppercase text-slate-400">Multiplicador atual</div>
                             <div id="current-matter" class="text-lg font-bold font-mono-num text-purple-300 mt-0.5">0</div>
                             <div id="current-matter-bonus" class="text-[10px] text-emerald-400">+0% Produção</div>
                         </div>
                         <div class="p-2.5 rounded-xl bg-slate-950/70 border border-purple-800/50">
-                            <div class="text-[10px] uppercase text-purple-300">Ganho no Big Bang</div>
+                            <div class="text-[10px] uppercase text-purple-300">Novo multiplicador</div>
                             <div id="pending-matter" class="text-lg font-bold font-mono-num text-white mt-0.5">+0</div>
                             <div class="text-[10px] text-slate-400">Requer 25.0K E total</div>
                         </div>
@@ -446,7 +446,7 @@
 
                     <p id="bb-req" class="hidden text-[11px] text-amber-300/90 text-center leading-snug"></p>
                     <button id="btn-trigger-bigbang" class="btn-press w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:opacity-60 font-bold text-xs uppercase tracking-wider text-white shadow-lg border border-purple-400/30">
-                        <i class="fa-solid fa-atom mr-1.5"></i> Iniciar Big Bang (+<span id="btn-matter-gain">0</span> Matéria)
+                        <i class="fa-solid fa-atom mr-1.5"></i> Iniciar Big Bang (<span id="btn-matter-gain">x1.00 → x1.25</span>)
                     </button>
                 </div>
 
@@ -514,6 +514,20 @@
                 </div>
                 <p id="tut-text" class="text-xs text-white leading-snug"></p>
                 <button id="tut-next" class="hidden btn-press w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Concluir</button>
+            </div>
+        </div>
+
+        <!-- PRÉ-VISUALIZAÇÃO DE SKIN -->
+        <div id="modal-skin" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-5">
+            <div id="skin-card" class="w-full max-w-xs rounded-3xl bg-slate-900 border-2 border-slate-700 p-5 text-center space-y-3 shadow-2xl">
+                <div id="skin-prev-avatar" class="alien-bob w-32 h-32 mx-auto"></div>
+                <div id="skin-prev-name" class="text-lg font-bold text-white"></div>
+                <div id="skin-prev-rarity" class="text-xs font-bold uppercase tracking-wider"></div>
+                <div id="skin-prev-note" class="text-xs text-slate-300 leading-snug"></div>
+                <div class="flex gap-2">
+                    <button id="btn-skin-close" class="btn-press flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Fechar</button>
+                    <button id="btn-skin-equip" class="btn-press flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-bold">Equipar</button>
+                </div>
             </div>
         </div>
 
@@ -679,6 +693,7 @@
             timeGateTier: 25,       // a partir daqui, cada elemento novo só pode ser descoberto X horas depois do anterior
             timeGateHours: 2,       // horas de espera para o primeiro elemento bloqueado
             timeGateHoursPerTier: 0.25, // + horas por cada nível seguinte (o nível 50 espera ~8h)
+            spawnCostCap: 120,      // o preço da injeção para de subir depois de X átomos comprados
             costScale: 8,           // multiplica o custo de todas as melhorias de Joules (antes: 1)
             cometSeconds: 60        // um cometa de energia dá X segundos de produção (antes: 150)
         };
@@ -847,7 +862,7 @@
             costCut: {
                 name: 'Síntese Eficiente', icon: 'fa-tags', max: 24, base: 600, growth: 2.4,
                 box: 'bg-emerald-950/80 border-emerald-700/40 text-emerald-400',
-                desc: (l) => `O custo da injeção sobe ${((getSpawnGrowth(l) - 1) * 100).toFixed(1)}% por átomo (base 18%).`
+                desc: (l) => `O custo da injeção sobe ${((getSpawnGrowth(l) - 1) * 100).toFixed(1)}% por átomo (base 5%).`
             }
         };
 
@@ -1146,6 +1161,18 @@
         }
 
         // Nível máximo do injetor: nunca ultrapassa o elemento mais alto já descoberto (só se descobre fundindo)
+        function getAutoSpawnInterval(l) {
+            return Math.max(BALANCE.autoSpawnMin, BALANCE.autoSpawnBase * Math.pow(BALANCE.autoSpawnRatio, l));
+        }
+        function updateAutoSpawnDesc() {
+            const l = state.upgrades.autoSpawn, cur = getAutoSpawnInterval(l).toFixed(1), next = getAutoSpawnInterval(l + 1).toFixed(1);
+            const txt = l === 0 ? `Gera um átomo grátis a cada ${next} s.`
+                : l >= UPGRADE_MAX.autoSpawn ? `Intervalo mínimo: ${cur} s.`
+                : `Agora: a cada ${cur} s. Próximo nível: a cada ${next} s.`;
+            const e = document.getElementById('desc-autospawn');
+            if (e._v !== txt) { e._v = txt; e.textContent = txt; }
+        }
+
         function getUpgradeMax(key) {
             if (key === 'spawnTier') return Math.max(0, Math.min(UPGRADE_MAX.spawnTier, state.unlockedMaxTier - 1));
             return UPGRADE_MAX[key];
@@ -1161,12 +1188,12 @@
         function getSpawnCost() {
             const baseTier = getStartingTier();
             const tierFactor = Math.pow(BALANCE.prodBase * 1.07, baseTier - 1); // custo acompanha a produção do nível
-            return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), state.spawnsBought));
+            return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), Math.min(state.spawnsBought, BALANCE.spawnCostCap)));
         }
 
         // Quanto o custo de injeção sobe por cada átomo comprado (18% base; Síntese Eficiente reduz até 6%)
         function getSpawnGrowth(costCutLevel) {
-            return Math.max(1.06, 1.18 - 0.005 * costCutLevel);
+            return Math.max(1.01, 1.05 - 0.002 * costCutLevel);
         }
 
         function getUpgradeCost(type) {
@@ -1922,6 +1949,18 @@
             ["Terminar sessão", "Sign out", "Cerrar sesión", "Se déconnecter"],
             ["Login Google ainda não configurado: define FIREBASE_CONFIG no código.", "Google login not configured yet: set FIREBASE_CONFIG in the code.", "Login de Google sin configurar: define FIREBASE_CONFIG en el código.", "Connexion Google non configurée : définis FIREBASE_CONFIG dans le code."],
             ["Estabilizar", "Stabilize", "Estabilizar", "Stabiliser"],
+            ["Abre o jogo por um endereço http (por exemplo localhost) para entrar com Google.", "Open the game from an http address (e.g. localhost) to sign in with Google.", "Abre el juego desde una dirección http (por ejemplo localhost) para iniciar sesión con Google.", "Ouvre le jeu depuis une adresse http (par exemple localhost) pour te connecter avec Google."],
+            ["sem ligação ao servidor", "no connection to the server", "sin conexión con el servidor", "pas de connexion au serveur"],
+            ["Salto limitado: faz um Big Bang!", "Jump limited: do a Big Bang!", "Salto limitado: ¡haz un Big Bang!", "Saut limité : fais un Big Bang !"],
+            ["Gera um átomo grátis a cada # s.", "Creates a free atom every # s.", "Genera un átomo gratis cada # s.", "Crée un atome gratuit toutes les # s."],
+            ["Agora: a cada # s. Próximo nível: a cada # s.", "Now: every # s. Next level: every # s.", "Ahora: cada # s. Siguiente nivel: cada # s.", "Actuel : toutes les # s. Niveau suivant : toutes les # s."],
+            ["Intervalo mínimo: # s.", "Minimum interval: # s.", "Intervalo mínimo: # s.", "Intervalle minimum : # s."],
+            ["Multiplicador atual", "Current multiplier", "Multiplicador actual", "Multiplicateur actuel"], ["Novo multiplicador", "New multiplier", "Nuevo multiplicador", "Nouveau multiplicateur"],
+            ["Multiplicador Cósmico", "Cosmic Multiplier", "Multiplicador cósmico", "Multiplicateur cosmique"],
+            ["Colapsa o teu universo atual para ganhar um", "Collapse your current universe to gain a", "Colapsa tu universo actual para ganar un", "Effondre ton univers actuel pour gagner un"],
+            [". Reinicia a tua energia, átomos e melhorias normais e desbloqueia mais 10 elementos.", ". Resets your energy, atoms and regular upgrades and unlocks 10 more elements.", ". Reinicia tu energía, átomos y mejoras normales y desbloquea 10 elementos más.", ". Réinitialise ton énergie, tes atomes et tes améliorations normales et débloque 10 éléments de plus."],
+            ["Iniciar Big Bang (", "Start Big Bang (", "Iniciar Big Bang (", "Lancer le Big Bang ("],
+            ["O Big Bang reinicia o universo, mas dá-te um multiplicador permanente de produção e desbloqueia mais 10 elementos!", "The Big Bang restarts the universe, but gives you a permanent production multiplier and unlocks 10 more elements!", "El Big Bang reinicia el universo, pero te da un multiplicador permanente de producción y desbloquea 10 elementos más.", "Le Big Bang relance l'univers, mais te donne un multiplicateur de production permanent et débloque 10 éléments de plus !"],
             ["Descobre o elemento", "Discover element", "Descubre el elemento", "Découvre l'élément"],
             ["para poderes fazer o Big Bang.", "to be able to do the Big Bang.", "para poder hacer el Big Bang.", "pour pouvoir faire le Big Bang."],
             ["Big Bang pronto: desbloqueia os próximos", "Big Bang ready: unlocks the next", "Big Bang listo: desbloquea los siguientes", "Big Bang prêt : débloque les"],
@@ -1938,6 +1977,9 @@
             ["Completa conquistas e missões diárias para ganhares Éter. Volta todos os dias!", "Complete achievements and daily missions to earn Ether. Come back every day!", "Completa logros y misiones diarias para ganar Éter. ¡Vuelve todos los días!", "Accomplis des succès et missions quotidiennes pour gagner de l'Éther. Reviens chaque jour !"],
             ["Aqui estão as receitas de compostos: quando tiveres os elementos na galáxia, toca em Juntar para ganhares bónus.", "Here are the compound recipes: when you have the elements in the galaxy, tap Join to earn bonuses.", "Aquí están las recetas de compuestos: cuando tengas los elementos en la galaxia, toca Unir para ganar bonos.", "Voici les recettes de composés : quand tu as les éléments dans la galaxie, touche Assembler pour gagner des bonus."],
             ["Juntar", "Join", "Unir", "Assembler"],
+            ["Fechar", "Close", "Cerrar", "Fermer"], ["Equipar", "Equip", "Equipar", "Équiper"], ["Equipada", "Equipped", "Equipada", "Équipé"],
+            ["Skin equipada", "Skin equipped", "Skin equipada", "Skin équipé"], ["Tens esta skin", "You own this skin", "Tienes esta skin", "Tu possèdes ce skin"],
+            ["Ainda não a tens", "You don't have it yet", "Aún no la tienes", "Tu ne l'as pas encore"], ["Sai em", "Drops from", "Sale en", "Disponible dans"],
             ["O Big Bang reinicia o universo, mas dá-te Matéria Primordial e desbloqueia mais 10 elementos!", "The Big Bang restarts the universe, but gives you Primordial Matter and unlocks 10 more elements!", "El Big Bang reinicia el universo, pero te da Materia primordial y desbloquea 10 elementos más.", "Le Big Bang relance l'univers, mais te donne de la Matière primordiale et débloque 10 éléments de plus !"],
             ["Caixas de skins", "Skin crates", "Cajas de skins", "Caisses de skins"], ["Coleção", "Collection", "Colección", "Collection"],
             ["Caixa Grátis", "Free Crate", "Caja gratis", "Caisse gratuite"], ["Caixa Cósmica", "Cosmic Crate", "Caja cósmica", "Caisse cosmique"], ["Caixa Estelar", "Stellar Crate", "Caja estelar", "Caisse stellaire"],
@@ -2336,6 +2378,10 @@
                 cloudSync(false, true);
                 return;
             }
+            if (typeof location !== 'undefined' && location.protocol === 'file:') {
+                showLoginError('Abre o jogo por um endereço http (por exemplo localhost) para entrar com Google.');
+                return;
+            }
             if (!fbAuth) return;
             // Só popup: o redirecionamento falha em navegadores que bloqueiam armazenamento de terceiros (ex.: GitHub Pages)
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -2510,7 +2556,7 @@
             'tab-elements': () => state.unlockedMaxTier >= 2,
             'tab-shop': () => state.unlockedMaxTier >= 3,
             'tab-achievements': () => state.unlockedMaxTier >= 4,
-            'tab-recipes': () => state.unlockedMaxTier >= 5,
+            'tab-recipes': () => state.stats.bigBangs > 0,
             'tab-prestige': () => state.stats.bigBangs > 0 || state.unlockedMaxTier >= 8
         };
         const TAB_NAMES = { 'tab-elements': 'Elementos', 'tab-shop': 'Loja', 'tab-achievements': 'Conquistas', 'tab-recipes': 'Receitas', 'tab-prestige': 'Big Bang' };
@@ -2557,7 +2603,7 @@
             'tab-shop': 'Na Loja trocas Éter por Joules, compras pacotes e abres caixas com roupas novas para mim!',
             'tab-achievements': 'Completa conquistas e missões diárias para ganhares Éter. Volta todos os dias!',
             'tab-recipes': 'Aqui estão as receitas de compostos: quando tiveres os elementos na galáxia, toca em Juntar para ganhares bónus.',
-            'tab-prestige': 'O Big Bang reinicia o universo, mas dá-te Matéria Primordial e desbloqueia mais 10 elementos!'
+            'tab-prestige': 'O Big Bang reinicia o universo, mas dá-te um multiplicador permanente de produção e desbloqueia mais 10 elementos!'
         };
         let tutRing = null;
 
@@ -3001,6 +3047,29 @@
             document.getElementById('crate-result').classList.remove('hidden');
         }
 
+        // Janelinha para ver uma skin (tenhas ou não) com a raridade e onde sai
+        let previewSkin = null;
+        function openSkinPreview(id) {
+            const k = ALIEN_SKINS[id];
+            if (!k) return;
+            const r = RARITY[k.rarity], owned = !!state.skins.owned[id], active = state.skins.active === id;
+            previewSkin = id;
+            document.getElementById('skin-prev-avatar').innerHTML = alienSVG(id);
+            document.getElementById('skin-prev-name').textContent = k.name;
+            const re = document.getElementById('skin-prev-rarity');
+            re.textContent = r.name;
+            re.style.color = r.color;
+            document.getElementById('skin-card').style.borderColor = r.color;
+            const where = CRATES.filter(c => c.odds.some(o => o[0] === k.rarity)).map(c => tr(c.name)).join(', ');
+            document.getElementById('skin-prev-note').textContent = owned
+                ? (active ? tr('Skin equipada') : tr('Tens esta skin'))
+                : `${tr('Ainda não a tens')} · ${tr('Sai em')}: ${where}`;
+            const eq = document.getElementById('btn-skin-equip');
+            eq.disabled = !owned || active;
+            eq.textContent = active ? 'Equipada' : 'Equipar';
+            document.getElementById('modal-skin').classList.remove('hidden');
+        }
+
         function equipSkin(id) {
             if (!state.skins.owned[id]) return;
             state.skins.active = id;
@@ -3029,7 +3098,9 @@
                 <h3 class="px-1 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Coleção</h3>
                 <div class="grid grid-cols-4 gap-1.5">${sk}</div>`;
             CRATES.forEach(c => document.getElementById(`crate-btn-${c.id}`).addEventListener('click', () => openCrate(c.id)));
-            Object.keys(ALIEN_SKINS).forEach(id => document.getElementById(`skin-${id}`).addEventListener('click', () => equipSkin(id)));
+            Object.keys(ALIEN_SKINS).forEach(id => document.getElementById(`skin-${id}`).addEventListener('click', () => openSkinPreview(id)));
+            document.getElementById('btn-skin-close').addEventListener('click', () => document.getElementById('modal-skin').classList.add('hidden'));
+            document.getElementById('btn-skin-equip').addEventListener('click', () => { equipSkin(previewSkin); openSkinPreview(previewSkin); });
             document.getElementById('btn-crate-ok').addEventListener('click', () => document.getElementById('modal-crate').classList.add('hidden'));
         }
 
@@ -3159,7 +3230,8 @@
            Em modo demo devolve sempre sucesso. Para vender a sério, liga aqui o teu fornecedor
            (Google Play Billing / Apple IAP / Stripe...) e valida a compra num servidor. */
         // URL do servidor de pagamentos (ver payments-worker.js). Vazio = pagamentos reais desligados.
-        const PAYMENTS_API_URL = 'https://alchemist-pay.chikkool27.workers.dev';
+        const PAYMENTS_API_URL = '';
+        function payApi() { return String(PAYMENTS_API_URL).trim().replace(/\/+$/, ''); } // aceita o endereço com ou sem barra no fim
 
         async function processPayment(kind, pack) {
             if (SHOP_DEMO_MODE) return true;
@@ -3167,17 +3239,19 @@
             if (!fbUser || !fbUser.getIdToken) throw new Error('Entra com a tua conta Google para comprar.');
             const list = kind === 'ether' ? SHOP_ETHER_PACKS : SHOP_JOULE_PACKS;
             const packId = (kind === 'ether' ? 'e' : 'j') + list.indexOf(pack);
-            let d;
+            let d, why = '';
             try {
-                const r = await fetch(`${PAYMENTS_API_URL}/checkout`, {
+                const r = await fetch(`${payApi()}/checkout`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ packId, token: await fbUser.getIdToken() })
                 });
-                d = await r.json();
-                if (!r.ok || !d.url) throw new Error('checkout');
+                d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.url) why = [r.status, d.error, d.detail].filter(Boolean).join(' ');
+                else if (d.id) { try { localStorage.setItem(PENDING_KEY, JSON.stringify({ id: d.id, at: Date.now() })); } catch (e) {} }
             } catch (e) {
-                throw new Error('Não foi possível iniciar o pagamento.');
+                why = tr('sem ligação ao servidor');
             }
+            if (why) throw new Error(`${tr('Não foi possível iniciar o pagamento.')} (${why})`);
             saveGame();
             location.href = d.url; // página de pagamento segura do Stripe
             return 'redirect';
@@ -3188,12 +3262,27 @@
         }
 
         // ao voltar do Stripe: ?paid=<sessão> (pago) ou ?canceled=1
-        let pendingPaid = null;
-        try { pendingPaid = new URLSearchParams(location.search).get('paid'); } catch (e) {}
+        // guarda a sessão em curso: se o jogador fechar a página antes de voltar do Stripe, recupera-se ao entrar de novo (até 24 h)
+        const PENDING_KEY = 'alchemist_pending_session';
+        function readPending() {
+            try {
+                const v = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+                if (v && Date.now() - v.at < 86400000) return v.id;
+                localStorage.removeItem(PENDING_KEY);
+            } catch (e) {}
+            return null;
+        }
+        function clearPending() { try { localStorage.removeItem(PENDING_KEY); } catch (e) {} }
+        let pendingPaid = null, pendingFromUrl = false;
+        try {
+            const q = new URLSearchParams(location.search).get('paid');
+            if (q) { pendingPaid = q; pendingFromUrl = true; } else pendingPaid = readPending();
+        } catch (e) {}
         function handlePaymentUrl() {
             try {
                 if (new URLSearchParams(location.search).get('canceled')) {
                     showShopToast('Compra cancelada.');
+                    clearPending();
                     cleanPaymentUrl();
                 }
             } catch (e) {}
@@ -3202,18 +3291,23 @@
         async function redeemPayment() {
             if (!pendingPaid || !fbUser || !PAYMENTS_API_URL || !fbUser.getIdToken) return;
             const session = pendingPaid;
-            if (state.paidSessions[session]) { pendingPaid = null; cleanPaymentUrl(); return; }
+            if (state.paidSessions[session]) { pendingPaid = null; clearPending(); cleanPaymentUrl(); return; }
             try {
-                const r = await fetch(`${PAYMENTS_API_URL}/redeem`, {
+                const r = await fetch(`${payApi()}/redeem`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session, token: await fbUser.getIdToken() })
                 });
                 const d = await r.json();
-                if (!r.ok) throw new Error(d.error || 'erro');
+                if (!r.ok) {
+                    if (r.status === 402 && !pendingFromUrl) return; // sessão antiga ainda por pagar: tenta noutra altura
+                    if (r.status === 409) { pendingPaid = null; clearPending(); cleanPaymentUrl(); return; }
+                    throw new Error(d.error || 'erro');
+                }
                 if (d.kind === 'ether') grantEther(SHOP_ETHER_PACKS[d.index].ether);
                 else state.energy += getShopJoules(SHOP_JOULE_PACKS[d.index]);
                 state.paidSessions[session] = Date.now();
                 pendingPaid = null;
+                clearPending();
                 saveGame();
                 cloudPush(true);
                 sfx.playDiscovery();
@@ -3555,6 +3649,7 @@
             let nextTier = Math.min(ELEMENTS.length, p1.tier + 1 + (jumped ? 1 : 0));
             nextTier = Math.min(nextTier, getTierCap());
             if (nextTier <= p1.tier) return false; // limite do Big Bang
+            if (jumped && p1.tier + 2 > getTierCap()) spawnFloatingText((p1.x + p2.x) / 2, (p1.y + p2.y) / 2 - 30, 'Salto limitado: faz um Big Bang!', '#fbbf24');
             // nos níveis com travão não há saltos que ultrapassem o próximo elemento por descobrir
             if (state.unlockedMaxTier >= BALANCE.timeGateTier - 1) nextTier = Math.min(nextTier, Math.max(p1.tier + 1, state.unlockedMaxTier + 1));
             if (isTierLocked(nextTier)) return false;
@@ -3653,7 +3748,7 @@
 
             // 3. Auto-Spawner Timer
             if (state.upgrades.autoSpawn > 0 && liveParticles.length < getMaxCapacity()) {
-                const interval = Math.max(BALANCE.autoSpawnMin, BALANCE.autoSpawnBase * Math.pow(BALANCE.autoSpawnRatio, state.upgrades.autoSpawn));
+                const interval = getAutoSpawnInterval(state.upgrades.autoSpawn);
                 autoSpawnTimer += dt;
                 if (autoSpawnTimer >= interval) {
                     autoSpawnTimer = 0;
@@ -4032,6 +4127,7 @@
             updateAutoMergeRow();
             updateLabRow('resonance', 'resonance', 0);
             updateLabRow('autoSpawn', 'autospawn', 0);
+            updateAutoSpawnDesc();
             updateLabExtraUI();
             updateOverclockUI();
             updateAchievementsUI();
@@ -4051,10 +4147,11 @@
 
             // Big Bang / Prestige Tab
             const pendingMatter = getPendingPrimordialMatter();
-            document.getElementById('current-matter').textContent = formatNum(state.primordialMatter);
+            const bbMult = 1 + state.primordialMatter * 0.25, bbNew = 1 + (state.primordialMatter + pendingMatter) * 0.25;
+            document.getElementById('current-matter').textContent = `x${bbMult.toFixed(2)}`;
             document.getElementById('current-matter-bonus').textContent = `+${formatNum(state.primordialMatter * 25)}% Produção`;
-            document.getElementById('pending-matter').textContent = `+${formatNum(pendingMatter)}`;
-            document.getElementById('btn-matter-gain').textContent = formatNum(pendingMatter);
+            document.getElementById('pending-matter').textContent = `x${bbNew.toFixed(2)}`;
+            document.getElementById('btn-matter-gain').textContent = `x${bbMult.toFixed(2)} → x${bbNew.toFixed(2)}`;
             document.getElementById('btn-trigger-bigbang').disabled = !canBigBang();
             updateBigBangUI();
 
