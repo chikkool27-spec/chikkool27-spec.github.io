@@ -3230,7 +3230,7 @@
            Em modo demo devolve sempre sucesso. Para vender a sério, liga aqui o teu fornecedor
            (Google Play Billing / Apple IAP / Stripe...) e valida a compra num servidor. */
         // URL do servidor de pagamentos (ver payments-worker.js). Vazio = pagamentos reais desligados.
-        const PAYMENTS_API_URL = '';
+        const PAYMENTS_API_URL = 'https://quantumidle-pay.chikkool27.workers.dev';
         function payApi() { return String(PAYMENTS_API_URL).trim().replace(/\/+$/, ''); } // aceita o endereço com ou sem barra no fim
 
         async function processPayment(kind, pack) {
