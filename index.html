@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Elements: Cosmic Idle</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#020617">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Cosmic Idle">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -62,6 +69,8 @@
         .zorp-eyes { transform-box: fill-box; transform-origin: center; }
         .zorp-blink .zorp-eyes { animation: zblink .22s ease-in-out 1; }
         @keyframes zblink { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.08); } }
+        .zorp-jump svg { transform-origin: 50% 100%; animation: zjump .6s ease-out 1; }
+        @keyframes zjump { 0%, 100% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-14px) scale(.95, 1.08); } 60% { transform: translateY(0) scale(1.08, .92); } }
         .zorp-shake svg { transform-origin: 50% 90%; animation: zshake .9s ease-in-out 1; }
         @keyframes zshake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 45% { transform: rotate(8deg); } 70% { transform: rotate(-5deg); } }
         .alien-bob { animation: bob 2.2s ease-in-out infinite; }
@@ -101,6 +110,7 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs text-slate-400 font-mono-num">
                         <span>+<span id="eps-display" class="text-emerald-400 font-semibold">0.0</span> E/s</span>
+                        <span id="boost-badge" class="hidden px-1.5 py-0.2 rounded bg-fuchsia-950/80 border border-fuchsia-700/50 text-fuchsia-300 text-[10px] font-mono-num"></span>
                         <span id="ether-badge" class="hidden px-1.5 py-0.2 rounded bg-teal-950/80 border border-teal-700/50 text-teal-300 text-[10px]">
                             <i class="fa-solid fa-gem mr-0.5"></i><span id="ether-badge-val">0</span> Æ
                         </span>
@@ -145,7 +155,13 @@
             </div>
 
             <!-- Zorp: mascote sempre presente na galáxia -->
-            <div id="zorp-pet" class="zorp-float absolute bottom-2 left-2 w-12 h-12 z-10 pointer-events-none"></div>
+            <div id="block-banner" class="hidden absolute bottom-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-slate-900/90 border border-amber-400/50 text-[10px] text-amber-200 whitespace-nowrap pointer-events-none"></div>
+            <div id="zorp-pet" class="zorp-float absolute bottom-2 left-2 w-12 h-12 z-10 cursor-pointer"></div>
+            <span id="zorp-alert" class="hidden absolute bottom-10 left-9 z-20 w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-bold flex items-center justify-center pointer-events-none">!</span>
+            <div id="zorp-bubble" class="hidden absolute bottom-16 left-2 z-20 max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm bg-slate-900/95 border border-amber-400/50 shadow-xl">
+                <div id="zorp-bubble-text" class="text-[11px] text-white leading-snug"></div>
+                <div id="zorp-bubble-lv" class="text-[9px] text-amber-300 mt-0.5"></div>
+            </div>
 
             <!-- Sobrecarga (habilidade ativa) -->
             <button id="btn-overclock" class="btn-press absolute bottom-2.5 right-3 z-10 px-3 py-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-rose-600 border border-amber-300/40 text-[11px] font-bold text-white shadow-lg flex items-center gap-1.5 disabled:from-slate-800 disabled:to-slate-900 disabled:border-slate-700 disabled:text-slate-400">
@@ -226,7 +242,11 @@
                     <div id="shop-exchange" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
+                <div id="offers-box" class="space-y-2"></div>
+
                 <div id="crates-box" class="space-y-2"></div>
+
+                <div id="ads-box" class="space-y-2"></div>
 
                 <div class="space-y-2">
                     <h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-teal-300"><i class="fa-solid fa-gem mr-1"></i>Comprar Éter</h3>
@@ -400,7 +420,7 @@
                     <span id="ach-counter" class="text-xs font-mono-num font-bold px-2.5 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60">0 / 0</span>
                 </div>
                 <div id="daily-box" class="space-y-2"></div>
-                <div id="ach-list" class="space-y-2 pb-2"></div>
+                <div id="ach-list" class="flex flex-col gap-2 pb-2"></div>
             </section>
 
             <!-- TAB 2: DESCOBERTAS (Element Pokedex) -->
@@ -523,10 +543,24 @@
                 <div id="skin-prev-avatar" class="alien-bob w-32 h-32 mx-auto"></div>
                 <div id="skin-prev-name" class="text-lg font-bold text-white"></div>
                 <div id="skin-prev-rarity" class="text-xs font-bold uppercase tracking-wider"></div>
+                <div id="skin-prev-bonus" class="text-xs font-semibold text-emerald-300"></div>
                 <div id="skin-prev-note" class="text-xs text-slate-300 leading-snug"></div>
                 <div class="flex gap-2">
                     <button id="btn-skin-close" class="btn-press flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Fechar</button>
                     <button id="btn-skin-equip" class="btn-press flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-bold">Equipar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANÚNCIO DE DEMONSTRAÇÃO (só no Modo de testes) -->
+        <div id="modal-ad" class="hidden absolute inset-0 bg-slate-950/95 z-50 flex items-center justify-center p-6">
+            <div class="w-full max-w-xs rounded-3xl bg-slate-900 border border-sky-500/40 p-5 text-center space-y-3">
+                <div class="text-xs font-bold uppercase tracking-wider text-sky-300">Anúncio (demonstração)</div>
+                <div class="h-32 rounded-xl bg-gradient-to-br from-sky-900 to-fuchsia-900 flex items-center justify-center text-sm text-slate-200">Espaço publicitário</div>
+                <div id="ad-count" class="text-xs text-slate-300 font-mono-num"></div>
+                <div class="flex gap-2">
+                    <button id="btn-ad-cancel" class="btn-press flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Fechar sem recompensa</button>
+                    <button id="btn-ad-claim" class="btn-press flex-1 py-2.5 rounded-xl bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-bold">Recolher recompensa</button>
                 </div>
             </div>
         </div>
@@ -566,6 +600,10 @@
                     <div id="shop-confirm-amount" class="text-2xl font-bold font-mono-num text-white"></div>
                     <div id="shop-confirm-price" class="text-sm font-semibold text-slate-300 mt-0.5"></div>
                 </div>
+                <label id="shop-consent-row" class="hidden flex items-start gap-2 text-left text-[10px] text-slate-300 leading-snug">
+                    <input id="shop-consent" type="checkbox" class="mt-0.5 accent-teal-500 shrink-0">
+                    <span>Aceito que o conteúdo digital seja entregue de imediato e que perco o direito de livre resolução. Não há devoluções. <a href="legal.html#termos" target="_blank" rel="noopener" class="underline text-teal-300">Ver Termos</a></span>
+                </label>
                 <p id="shop-demo-note" class="text-[10px] text-amber-300/90 leading-snug">Modo de demonstração: nenhum pagamento real é efetuado.</p>
                 <div class="flex gap-2">
                     <button id="btn-shop-cancel" class="btn-press flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
@@ -619,6 +657,10 @@
                             <div class="min-w-0 flex-1"><div id="acct-name" class="text-white font-semibold truncate"></div><div id="acct-email" class="text-[10px] text-slate-400 truncate"></div><div id="cloud-status" class="text-[10px] text-teal-300 truncate"></div></div>
                             <button id="btn-cloud-sync" class="btn-press px-2.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[11px] font-semibold">Sincronizar agora</button>
                             <button id="btn-signout" class="btn-press px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-rose-600 text-white text-[11px] font-semibold">Terminar sessão</button>
+                            <div class="w-full flex gap-2 pt-1">
+                                <button id="btn-export-data" class="btn-press flex-1 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-semibold">Exportar os meus dados</button>
+                                <button id="btn-delete-account" class="btn-press flex-1 py-1.5 rounded-lg bg-rose-900/70 hover:bg-rose-700 text-rose-100 text-[11px] font-semibold">Apagar conta</button>
+                            </div>
                         </div>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-800/70 flex items-center justify-between gap-3">
@@ -626,6 +668,13 @@
                         <select id="lang-select" class="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2 py-1.5"></select>
                     </div>
 
+                    <button id="btn-install" class="hidden btn-press w-full py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold"><i class="fa-solid fa-download mr-1.5"></i>Instalar o jogo no telemóvel</button>
+                    <p id="ios-install-hint" class="hidden text-[10px] text-slate-400 text-center leading-snug">No iPhone: toca em Partilhar e depois em «Adicionar ao ecrã principal».</p>
+                    <button id="btn-feedback" class="btn-press w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"><i class="fa-regular fa-comment-dots mr-1.5"></i>Enviar feedback</button>
+                    <div class="flex items-center justify-center gap-4 text-[11px]">
+                        <a href="legal.html#termos" target="_blank" rel="noopener" class="text-slate-400 underline">Termos de Utilização</a>
+                        <a href="legal.html#privacidade" target="_blank" rel="noopener" class="text-slate-400 underline">Política de Privacidade</a>
+                    </div>
                     <button id="btn-debug-toggle" class="btn-press w-full py-2 rounded-xl bg-slate-800 text-slate-300 text-[11px] font-semibold border border-slate-700">Modo de testes: OFF</button>
                     <div id="debug-box" class="hidden p-3 rounded-xl bg-amber-950/40 border border-amber-800/50 space-y-2">
                         <div class="text-[10px] uppercase tracking-wider text-amber-300">Painel de testes</div>
@@ -686,14 +735,16 @@
             autoSpawnBase: 30,      // segundos entre átomos grátis no nível 0 da Síntese Contínua (antes: 14)
             autoSpawnRatio: 0.9,    // multiplicador por nível (antes: 0.8)
             autoSpawnMin: 2,        // intervalo mínimo em segundos (antes: 0.5)
-            gateTier: 16,           // a partir deste nível, descobrir um elemento novo custa energia
+            gateTier: 999,          // DESLIGADO (999). Para ligar: a partir deste nível, descobrir um elemento novo custa energia (ex.: 16)
             gateSeconds: 600,       // custo base = X segundos de produção de um átomo desse nível
             gateGrowth: 1.25,       // dificuldade extra por cada nível acima do anterior
             bbBlock: 10,            // cada Big Bang desbloqueia mais X elementos
-            timeGateTier: 25,       // a partir daqui, cada elemento novo só pode ser descoberto X horas depois do anterior
+            timeGateTier: 999,      // DESLIGADO (999). Para ligar: a partir deste nível, cada elemento novo só se descobre X horas depois do anterior (ex.: 25)
             timeGateHours: 2,       // horas de espera para o primeiro elemento bloqueado
             timeGateHoursPerTier: 0.25, // + horas por cada nível seguinte (o nível 50 espera ~8h)
             spawnCostCap: 120,      // o preço da injeção para de subir depois de X átomos comprados
+            bbMinEnergy: 25000,     // energia mínima no universo para poder fazer Big Bang
+            bbFinalCooldownH: 12,   // depois de todos os elementos, espera mínima entre Big Bangs repetidos
             costScale: 8,           // multiplica o custo de todas as melhorias de Joules (antes: 1)
             cometSeconds: 60        // um cometa de energia dá X segundos de produção (antes: 150)
         };
@@ -1096,6 +1147,16 @@
                 injectTier: 0,
                 paidSessions: {},
                 tierLockUntil: 0,
+                starterBought: false,
+                noAds: false,
+                ads: { day: '', watched: 0 },
+                spawnCounts: {},
+                lastBigBangAt: 0,
+                galaxyNames: {},
+                galaxyBest: {},
+                zorpTaps: 0,
+                zorpStory: 0,
+                boost: { mult: 1, endsAt: 0 },
                 skins: { owned: { default: true }, active: 'default', lastFree: '' },
                 tabIntroSeen: {},
                 daily: { date: '', missions: [], streak: 0, lastClaim: '' },
@@ -1188,7 +1249,7 @@
         function getSpawnCost() {
             const baseTier = getStartingTier();
             const tierFactor = Math.pow(BALANCE.prodBase * 1.07, baseTier - 1); // custo acompanha a produção do nível
-            return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), Math.min(state.spawnsBought, BALANCE.spawnCostCap)));
+            return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), Math.min(state.spawnCounts[baseTier] || 0, BALANCE.spawnCostCap)));
         }
 
         // Quanto o custo de injeção sobe por cada átomo comprado (18% base; Síntese Eficiente reduz até 6%)
@@ -1213,15 +1274,18 @@
             return 999999;
         }
 
-        function getGlobalMultiplier() {
+        // stable = sem bónus temporários (cinética, sobrecarga, impulso): usado nos preços da loja
+        function getGlobalMultiplier(stable) {
             const discoveryBonus = 1 + (state.unlockedMaxTier - 1) * BALANCE.discoveryPerTier;
             const resonanceBonus = 1 + state.upgrades.resonance * BALANCE.resonancePerLvl;
-            const prestigeBonus = 1 + state.primordialMatter * 0.25;
-            const kineticBonus = getKineticMultiplier(); // Up to 2.0x (mais com Maestria Cinética)
+            const prestigeBonus = Math.pow(2, state.stats.bigBangs); // cada Big Bang duplica a produção
+            const kineticBonus = stable ? 1 : getKineticMultiplier(); // Up to 2.0x (mais com Maestria Cinética)
             const etherBonus = 1 + state.etherUpgrades.etherCore * 0.1;
-            const overclockBonus = isOverclockActive() ? getOverclockPower() : 1;
+            const overclockBonus = !stable && isOverclockActive() ? getOverclockPower() : 1;
+            const boostBonus = !stable && isBoostActive() ? state.boost.mult : 1;
+            const skinBonus = 1 + getSkinBonus();
             const labBonus = (1 + getCompoundBonus()) * (1 + 0.1 * state.research.levels.prod);
-            return discoveryBonus * resonanceBonus * prestigeBonus * kineticBonus * etherBonus * overclockBonus * labBonus;
+            return discoveryBonus * resonanceBonus * prestigeBonus * kineticBonus * etherBonus * overclockBonus * labBonus * boostBonus * skinBonus;
         }
 
         function getKineticMultiplier() {
@@ -1494,6 +1558,7 @@
             Object.keys(ACHIEVEMENTS).forEach(key => {
                 const a = ACHIEVEMENTS[key];
                 const card = document.createElement('div');
+                card.id = `ach-card-${key}`;
                 card.className = 'p-3 rounded-2xl bg-slate-900/75 border border-slate-800/90 space-y-2';
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-3">
@@ -1552,6 +1617,12 @@
                 const ready = !!next && value >= next[0];
                 if (ready) anyReady = true;
                 if (!visible) return;
+
+                // prontas a recolher primeiro; depois as mais perto de acabar; as concluídas no fim
+                const frac = next ? Math.min(1, value / next[0]) : 0;
+                const order = ready ? -2000 + Object.keys(ACHIEVEMENTS).indexOf(key) : (next ? 1000 - Math.round(frac * 900) : 5000);
+                const cardEl = document.getElementById(`ach-card-${key}`);
+                if (cardEl._o !== order) { cardEl._o = order; cardEl.style.order = order; }
 
                 document.getElementById(`ach-lvl-${key}`).textContent = `${lvl}/${a.levels.length}`;
                 if (next) {
@@ -1949,6 +2020,56 @@
             ["Terminar sessão", "Sign out", "Cerrar sesión", "Se déconnecter"],
             ["Login Google ainda não configurado: define FIREBASE_CONFIG no código.", "Google login not configured yet: set FIREBASE_CONFIG in the code.", "Login de Google sin configurar: define FIREBASE_CONFIG en el código.", "Connexion Google non configurée : définis FIREBASE_CONFIG dans le code."],
             ["Estabilizar", "Stabilize", "Estabilizar", "Stabiliser"],
+            ["Já usaste as caixas extra de hoje.", "You've used today's extra crates.", "Ya usaste las cajas extra de hoy.", "Tu as utilisé les caisses bonus du jour."],
+            ["Anúncio não concluído. Tenta outra vez.", "Ad not completed. Try again.", "Anuncio no completado. Inténtalo de nuevo.", "Publicité non terminée. Réessaie."],
+            ["Caixa extra", "Extra crate", "Caja extra", "Caisse bonus"], ["Vê um anúncio e abre mais uma caixa grátis.", "Watch an ad and open one more free crate.", "Mira un anuncio y abre otra caja gratis.", "Regarde une pub et ouvre une caisse gratuite de plus."],
+            ["#/# hoje", "#/# today", "#/# hoy", "#/# aujourd'hui"], ["Ver anúncio", "Watch ad", "Ver anuncio", "Voir la pub"], ["Abrir caixa extra", "Open extra crate", "Abrir caja extra", "Ouvrir la caisse bonus"],
+            ["Sem Anúncios", "No Ads", "Sin anuncios", "Sans pub"], ["Remove os anúncios e abre as caixas extra sem ver nenhum.", "Removes ads and opens the extra crates without watching any.", "Quita los anuncios y abre las cajas extra sin ver ninguno.", "Supprime les pubs et ouvre les caisses bonus sans en regarder."],
+            ["Sem anúncios", "No ads", "Sin anuncios", "Sans pub"], ["Anúncios removidos!", "Ads removed!", "¡Anuncios eliminados!", "Pubs supprimées !"],
+            ["Anúncio (demonstração)", "Ad (demo)", "Anuncio (demostración)", "Publicité (démo)"], ["Espaço publicitário", "Ad space", "Espacio publicitario", "Espace publicitaire"], ["Espaço publicitário (demonstração)", "Ad space (demo)", "Espacio publicitario (demostración)", "Espace publicitaire (démo)"],
+            ["Recolher recompensa", "Claim reward", "Recoger recompensa", "Récupérer la récompense"], ["Fechar sem recompensa", "Close without reward", "Cerrar sin recompensa", "Fermer sans récompense"],
+            ["Podes fechar em # s", "You can close in # s", "Puedes cerrar en # s", "Tu peux fermer dans # s"], ["Anúncio terminado", "Ad finished", "Anuncio terminado", "Publicité terminée"],
+            ["Dá +#% de produção", "Gives +#% production", "Da +#% de producción", "Donne +#% de production"], ["Bónus da coleção: +#%", "Collection bonus: +#%", "Bono de colección: +#%", "Bonus de collection : +#%"],
+            ["Próximo Big Bang disponível em", "Next Big Bang available in", "Próximo Big Bang disponible en", "Prochain Big Bang disponible dans"],
+            ["Atlas de Galáxias", "Galaxy Atlas", "Atlas de galaxias", "Atlas des galaxies"],
+            ["Cada Big Bang cria uma galáxia nova. Toca no nome para a renomear.", "Each Big Bang creates a new galaxy. Tap the name to rename it.", "Cada Big Bang crea una galaxia nueva. Toca el nombre para renombrarla.", "Chaque Big Bang crée une nouvelle galaxie. Touche le nom pour la renommer."],
+            ["Galáxia #", "Galaxy #", "Galaxia #", "Galaxie #"], ["Atual", "Current", "Actual", "Actuelle"], ["Elemento mais alto", "Highest element", "Elemento más alto", "Élément le plus haut"],
+            ["Dá um nome a esta galáxia:", "Give this galaxy a name:", "Ponle un nombre a esta galaxia:", "Donne un nom à cette galaxie :"],
+            ["Amizade #/#", "Friendship #/#", "Amistad #/#", "Amitié #/#"],
+            ["Eu venho de um planeta sem átomos. Quando vi o teu laboratório, fiquei fascinado!", "I come from a planet without atoms. When I saw your lab, I was fascinated!", "Vengo de un planeta sin átomos. ¡Cuando vi tu laboratorio, quedé fascinado!", "Je viens d'une planète sans atomes. Quand j'ai vu ton labo, j'ai été fasciné !"],
+            ["No meu planeta os elementos eram invisíveis. Aqui consigo vê-los a dançar.", "On my planet the elements were invisible. Here I can watch them dance.", "En mi planeta los elementos eran invisibles. Aquí puedo verlos bailar.", "Sur ma planète, les éléments étaient invisibles. Ici je les vois danser."],
+            ["Sabes porque gosto de galáxias? Cada uma é um universo que nunca vi antes.", "Know why I like galaxies? Each one is a universe I've never seen before.", "¿Sabes por qué me gustan las galaxias? Cada una es un universo que nunca vi.", "Tu sais pourquoi j'aime les galaxies ? Chacune est un univers jamais vu."],
+            ["Já tenho uma coleção de roupas, mas ainda me falta uma lendária.", "I already have a clothes collection, but I still miss a legendary one.", "Ya tengo una colección de ropa, pero aún me falta una legendaria.", "J'ai déjà une collection de tenues, mais il me manque encore une légendaire."],
+            ["Quando chegares à Singularidade, conto-te o meu maior segredo.", "When you reach the Singularity, I'll tell you my biggest secret.", "Cuando llegues a la Singularidad, te cuento mi mayor secreto.", "Quand tu atteindras la Singularité, je te dirai mon plus grand secret."],
+            ["Obrigado por seres meu amigo. Este universo é melhor contigo.", "Thanks for being my friend. This universe is better with you.", "Gracias por ser mi amigo. Este universo es mejor contigo.", "Merci d'être mon ami. Cet univers est meilleur avec toi."],
+            ["Dica: junta elementos diferentes para criar compostos e ganhar bónus.", "Tip: combine different elements to make compounds and earn bonuses.", "Consejo: junta elementos distintos para crear compuestos y ganar bonos.", "Astuce : combine des éléments différents pour créer des composés et gagner des bonus."],
+            ["Dica: desliga o Colisor Automático para guardares átomos para um composto.", "Tip: turn off the Auto Collider to keep atoms for a compound.", "Consejo: apaga el Colisor automático para guardar átomos para un compuesto.", "Astuce : désactive le collisionneur auto pour garder des atomes pour un composé."],
+            ["Dica: os cometas dão energia, átomos grátis ou fundem tudo de uma vez. Toca neles!", "Tip: comets give energy, free atoms or fuse everything at once. Tap them!", "Consejo: los cometas dan energía, átomos gratis o fusionan todo de golpe. ¡Tócalos!", "Astuce : les comètes donnent de l'énergie, des atomes gratuits ou fusionnent tout. Touche-les !"],
+            ["Dica: faz um Big Bang a cada 10 elementos para desbloqueares os seguintes.", "Tip: do a Big Bang every 10 elements to unlock the next ones.", "Consejo: haz un Big Bang cada 10 elementos para desbloquear los siguientes.", "Astuce : fais un Big Bang tous les 10 éléments pour débloquer les suivants."],
+            ["Dica: a Sobrecarga multiplica a produção durante uns segundos.", "Tip: Overclock multiplies production for a few seconds.", "Consejo: la sobrecarga multiplica la producción unos segundos.", "Astuce : la surcharge multiplie la production quelques secondes."],
+            ["Dica: volta todos os dias para a caixa grátis e as missões.", "Tip: come back every day for the free crate and missions.", "Consejo: vuelve cada día para la caja gratis y las misiones.", "Astuce : reviens chaque jour pour la caisse gratuite et les missions."],
+            ["Olha! Um cometa! Toca nele!", "Look! A comet! Tap it!", "¡Mira! ¡Un cometa! ¡Tócalo!", "Regarde ! Une comète ! Touche-la !"],
+            ["Já podes fazer um Big Bang!", "You can do a Big Bang now!", "¡Ya puedes hacer un Big Bang!", "Tu peux faire un Big Bang !"],
+            ["Tens uma missão diária por recolher!", "You have a daily mission to collect!", "¡Tienes una misión diaria por recoger!", "Tu as une mission quotidienne à récupérer !"],
+            ["Tens uma caixa grátis à espera na Loja!", "A free crate is waiting in the Shop!", "¡Hay una caja gratis esperando en la Tienda!", "Une caisse gratuite t'attend dans la Boutique !"],
+            ["Oferta única", "One-time offer", "Oferta única", "Offre unique"], ["Pacote Inicial", "Starter Pack", "Paquete inicial", "Pack de départ"],
+            ["# Æ + skin exclusiva Zorp Fundador", "# Æ + exclusive Founder Zorp skin", "# Æ + skin exclusiva Zorp fundador", "# Æ + skin exclusif Zorp fondateur"],
+            ["Zorp Fundador", "Founder Zorp", "Zorp fundador", "Zorp fondateur"], ["Exclusiva do Pacote Inicial", "Exclusive to the Starter Pack", "Exclusiva del Paquete inicial", "Exclusif au Pack de départ"],
+            ["Impulsos", "Boosts", "Impulsos", "Boosts"], ["Impulso Cósmico", "Cosmic Boost", "Impulso cósmico", "Boost cosmique"], ["Hiperimpulso", "Hyperboost", "Hiperimpulso", "Hyperboost"],
+            ["# min de produção x#", "# min of production x#", "# min de producción x#", "# min de production x#"],
+            ["Já tens um impulso ativo.", "You already have an active boost.", "Ya tienes un impulso activo.", "Tu as déjà un boost actif."],
+            ["Impulso já no máximo (4 h).", "Boost already at maximum (4 h).", "Impulso ya al máximo (4 h).", "Boost déjà au maximum (4 h)."],
+            ["Impulso x# ativo!", "Boost x# active!", "¡Impulso x# activo!", "Boost x# actif !"], ["Pacote Inicial recebido!", "Starter Pack received!", "¡Paquete inicial recibido!", "Pack de départ reçu !"],
+            ["Exportar os meus dados", "Export my data", "Exportar mis datos", "Exporter mes données"], ["Apagar conta", "Delete account", "Eliminar cuenta", "Supprimer le compte"],
+            ["Apagar a conta e o progresso na nuvem? O progresso guardado neste aparelho mantém-se. Esta ação não pode ser desfeita.", "Delete the account and cloud progress? Progress saved on this device is kept. This cannot be undone.", "¿Eliminar la cuenta y el progreso en la nube? El progreso guardado en este dispositivo se mantiene. No se puede deshacer.", "Supprimer le compte et la progression dans le cloud ? La progression enregistrée sur cet appareil est conservée. Action irréversible."],
+            ["A apagar…", "Deleting…", "Eliminando…", "Suppression…"], ["Conta e dados da nuvem apagados.", "Account and cloud data deleted.", "Cuenta y datos de la nube eliminados.", "Compte et données du cloud supprimés."],
+            ["Não foi possível apagar a conta. Tenta outra vez.", "Could not delete the account. Try again.", "No se pudo eliminar la cuenta. Inténtalo de nuevo.", "Impossible de supprimer le compte. Réessaie."],
+            ["Instalar o jogo no telemóvel", "Install the game on your phone", "Instalar el juego en el móvil", "Installer le jeu sur le téléphone"],
+            ["No iPhone: toca em Partilhar e depois em «Adicionar ao ecrã principal».", "On iPhone: tap Share and then «Add to Home Screen».", "En iPhone: toca Compartir y luego «Añadir a pantalla de inicio».", "Sur iPhone : touche Partager puis «Sur l'écran d'accueil»."],
+            ["Enviar feedback", "Send feedback", "Enviar comentarios", "Envoyer un avis"],
+            ["Termos de Utilização", "Terms of Use", "Términos de uso", "Conditions d'utilisation"], ["Política de Privacidade", "Privacy Policy", "Política de privacidad", "Politique de confidentialité"],
+            ["Ver Termos", "View Terms", "Ver términos", "Voir les conditions"], ["Probabilidades", "Odds", "Probabilidades", "Probabilités"],
+            ["Aceito que o conteúdo digital seja entregue de imediato e que perco o direito de livre resolução. Não há devoluções.", "I agree that the digital content is delivered immediately and that I lose my right of withdrawal. No refunds.", "Acepto que el contenido digital se entregue de inmediato y que pierdo el derecho de desistimiento. No hay devoluciones.", "J'accepte que le contenu numérique soit livré immédiatement et que je perds mon droit de rétractation. Aucun remboursement."],
             ["Abre o jogo por um endereço http (por exemplo localhost) para entrar com Google.", "Open the game from an http address (e.g. localhost) to sign in with Google.", "Abre el juego desde una dirección http (por ejemplo localhost) para iniciar sesión con Google.", "Ouvre le jeu depuis une adresse http (par exemple localhost) pour te connecter avec Google."],
             ["sem ligação ao servidor", "no connection to the server", "sin conexión con el servidor", "pas de connexion au serveur"],
             ["Salto limitado: faz um Big Bang!", "Jump limited: do a Big Bang!", "Salto limitado: ¡haz un Big Bang!", "Saut limité : fais un Big Bang !"],
@@ -2308,15 +2429,22 @@
             updateUI();
         }
 
+        // Guarda a hora da última gravação na nuvem conhecida por este aparelho; sem isto o jogo perguntava de cada vez que se voltava de uma página externa
+        function syncKey() { return 'alchemist_sync_' + (fbUser ? fbUser.uid : ''); }
+        function knownSync() { try { return Number(localStorage.getItem(syncKey()) || 0); } catch (e) { return 0; } }
+        function rememberSync(at) { try { localStorage.setItem(syncKey(), String(at)); } catch (e) {} }
+
         async function cloudPush(force) {
             if (!fbUser || !fbDb || cloudBusy) return;
             if (!force && cloudSig() === cloudSigSent) return; // nada mudou
             cloudBusy = true;
             try {
                 saveGame();
+                const at = Date.now();
                 await fbDb.collection('saves').doc(fbUser.uid).set({
-                    data: JSON.stringify(state), savedAt: Date.now(), progress: state.stats.lifetimeEnergy
+                    data: JSON.stringify(state), savedAt: at, progress: state.stats.lifetimeEnergy
                 });
+                rememberSync(at);
                 cloudSigSent = cloudSig();
                 setCloudStatus(`Guardado na nuvem às ${new Date().toTimeString().slice(0, 5)}`);
             } catch (e) {
@@ -2334,11 +2462,12 @@
                     const snap = await fbDb.collection('saves').doc(fbUser.uid).get();
                     if (snap.exists) {
                         const c = snap.data(), local = state.stats.lifetimeEnergy;
-                        if (c.progress !== undefined && Math.abs(c.progress - local) > 1) {
+                        if (c.progress !== undefined && Math.abs(c.progress - local) > 1 && !(c.savedAt && c.savedAt <= knownSync())) {
                             const msg = `${tr('Save na nuvem encontrado')}\n${tr('Nuvem')}: ${formatNum(c.progress)} E · ${tr('Este dispositivo')}: ${formatNum(local)} E\n\n${tr('OK = usar o da nuvem. Cancelar = enviar este dispositivo para a nuvem.')}`;
                             if (confirm(msg)) {
                                 applyLoadedState(JSON.parse(c.data));
                                 cloudSigSent = cloudSig();
+                                rememberSync(c.savedAt || Date.now());
                                 setCloudStatus(`Guardado na nuvem às ${new Date().toTimeString().slice(0, 5)}`);
                                 return;
                             }
@@ -2352,6 +2481,79 @@
             await cloudPush(force || first);
         }
 
+        /* ---- Os teus dados: exportar e apagar a conta ---- */
+        function exportData() {
+            const data = { exportadoEm: new Date().toISOString(), conta: fbUser ? { uid: fbUser.uid, nome: fbUser.displayName, email: fbUser.email } : null, progresso: state };
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+            a.download = 'elements-cosmic-idle-dados.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+        }
+
+        async function deleteAccount() {
+            if (!fbUser || !fbDb) return;
+            if (!confirm(tr('Apagar a conta e o progresso na nuvem? O progresso guardado neste aparelho mantém-se. Esta ação não pode ser desfeita.'))) return;
+            const key = syncKey();
+            setCloudStatus(tr('A apagar…'));
+            try {
+                await fbDb.collection('saves').doc(fbUser.uid).delete();
+                if (FIREBASE_CONFIG.apiKey === 'demo') {
+                    fbUser = null;
+                    renderAccount();
+                } else {
+                    try { await fbUser.delete(); }
+                    catch (e) {
+                        if (e && e.code === 'auth/requires-recent-login') { // o Firebase pede um login recente para apagar contas
+                            await fbUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+                            await fbUser.delete();
+                        } else throw e;
+                    }
+                }
+                try { localStorage.removeItem(key); } catch (e) {}
+                showShopToast('Conta e dados da nuvem apagados.');
+            } catch (e) {
+                setCloudStatus('Erro de sincronização');
+                showShopToast('Não foi possível apagar a conta. Tenta outra vez.');
+            }
+        }
+
+        /* ---- Feedback por email (põe o teu email em FEEDBACK_EMAIL) ---- */
+        const FEEDBACK_EMAIL = 'chikkool27@gmail.com';
+        const GAME_VERSION = '1.0';
+        function feedbackLink() {
+            const body = ['Escreve aqui a tua mensagem:', '', '', '', '---', 'Informação técnica (não apagues):',
+                `Versão: ${GAME_VERSION}`, `Elemento mais alto: ${state.unlockedMaxTier}`, `Big Bangs: ${state.stats.bigBangs}`,
+                `Idioma: ${currentLang}`, `Aparelho: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`].join('\n');
+            return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent('Feedback — Elements: Cosmic Idle')}&body=${encodeURIComponent(body)}`;
+        }
+        function setupFeedback() {
+            const b = document.getElementById('btn-feedback');
+            if (!FEEDBACK_EMAIL) { b.classList.add('hidden'); return; }
+            b.addEventListener('click', () => { location.href = feedbackLink(); });
+        }
+
+        /* ---- Instalar como app (PWA) ---- */
+        let installEvt = null;
+        function setupPwa() {
+            if (typeof navigator === 'undefined') return;
+            if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+            const btn = document.getElementById('btn-install');
+            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; btn.classList.remove('hidden'); });
+            window.addEventListener('appinstalled', () => { installEvt = null; btn.classList.add('hidden'); });
+            btn.addEventListener('click', async () => {
+                if (!installEvt) return;
+                installEvt.prompt();
+                try { await installEvt.userChoice; } catch (e) {}
+                installEvt = null;
+                btn.classList.add('hidden');
+            });
+            const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+            if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) document.getElementById('ios-install-hint').classList.remove('hidden');
+        }
+
         const DEMO_USER = { uid: 'demo', displayName: 'Jogador Demo (simulação)', email: 'demo@exemplo.com', photoURL: '' };
 
         // Nuvem simulada em localStorage, para testar o login e a sincronização sem Firebase
@@ -2360,7 +2562,8 @@
             const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } };
             fbDb = { collection: () => ({ doc: () => ({
                 get: async () => { const d = read(); return { exists: !!d, data: () => d }; },
-                set: async (v) => { localStorage.setItem(KEY, JSON.stringify(v)); }
+                set: async (v) => { localStorage.setItem(KEY, JSON.stringify(v)); },
+                delete: async () => { localStorage.removeItem(KEY); }
             }) }) };
             fbAuth = { signOut: async () => { fbUser = null; renderAccount(); } };
         }
@@ -2399,6 +2602,8 @@
             document.getElementById('btn-google-login').addEventListener('click', signInGoogle);
             document.getElementById('btn-cloud-sync').addEventListener('click', () => cloudSync(true, false));
             document.getElementById('btn-signout').addEventListener('click', () => { if (fbAuth) fbAuth.signOut(); });
+            document.getElementById('btn-export-data').addEventListener('click', exportData);
+            document.getElementById('btn-delete-account').addEventListener('click', deleteAccount);
             renderAccount();
             if (!FIREBASE_CONFIG.apiKey) return;
             try {
@@ -2492,7 +2697,7 @@
         }
 
         /* ---- Painel de testes (põe DEBUG_AVAILABLE = false antes de publicar) ---- */
-        const DEBUG_AVAILABLE = false;
+        const DEBUG_AVAILABLE = (typeof location !== 'undefined' && /[?&]debug=1/.test(location.search)); // abre o jogo com ?debug=1 para testar
         const DEBUG_ACTIONS = [
             ['dbg-energy', '+1h de Joules', () => addEnergy(Math.max(1000, getEnergyPerSecond() * 3600))],
             ['dbg-energy-x', 'Joules x100', () => { state.energy = Math.max(state.energy * 100, 1e6); }],
@@ -2502,6 +2707,8 @@
                 if (state.research.active) state.research.active.endsAt -= 3600000;
                 state.overclockReadyAt -= 3600000;
                 state.overclockEndsAt -= 3600000;
+                state.tierLockUntil -= 3600000;
+                state.lastBigBangAt -= 3600000;
                 updateResearch();
             }],
             ['dbg-comet', 'Cometa agora', () => { if (!activeComet) spawnComet(); }],
@@ -2510,11 +2717,15 @@
                 const o = JSON.parse(JSON.stringify(state));
                 o.stats.lifetimeEnergy = (o.stats.lifetimeEnergy + 1000) * 5;
                 o.energy = (o.energy || 0) + 12345;
-                localStorage.setItem('alchemist_fake_cloud', JSON.stringify({ data: JSON.stringify(o), savedAt: Date.now(), progress: o.stats.lifetimeEnergy }));
+                localStorage.setItem('alchemist_fake_cloud', JSON.stringify({ data: JSON.stringify(o), savedAt: Date.now() + 1000, progress: o.stats.lifetimeEnergy }));
                 showShopToast('Save de teste criado na nuvem (modo demo)');
             }],
             ['dbg-daily-new', 'Novas missões', () => { dailySalt = String(Date.now()); dailyNextReset = 0; state.daily.date = ''; state.daily.missions = []; ensureDaily(); }],
             ['dbg-daily-done', 'Completar missões', () => { ensureDaily(); state.daily.missions.forEach(m => { m.base -= m.target + 1; }); }],
+            ['dbg-lock', 'Saltar espera do elemento', () => { state.tierLockUntil = 0; }],
+            ['dbg-cap', 'Descobrir até ao limite', () => { const cap = getTierCap(); for (let t = state.unlockedMaxTier + 1; t <= cap; t++) checkElementDiscovery(t); state.tierLockUntil = 0; }],
+            ['dbg-bb', 'Preparar Big Bang', () => { state.runEnergy = Math.max(state.runEnergy, BALANCE.bbMinEnergy * 40); state.lastBigBangAt = 0; }],
+            ['dbg-ads', 'Repor anúncios do dia', () => { state.ads.watched = 0; state.ads.day = dayKey(); }],
             ['dbg-cd', 'Zerar recargas', () => {
                 state.overclockReadyAt = 0;
                 state.overclockEndsAt = 0;
@@ -2644,6 +2855,7 @@
         // Mascote na galáxia: pisca e abana a cabeça de vez em quando
         let petKey = '';
         function updateZorpPet() {
+            document.getElementById('zorp-alert').classList.toggle('hidden', !zorpAlert());
             const k = state.skins.active;
             if (petKey === k) return;
             petKey = k;
@@ -2656,6 +2868,7 @@
             const shake = () => { pet.classList.add('zorp-shake'); setTimeout(() => pet.classList.remove('zorp-shake'), 950); setTimeout(shake, rnd(20000, 45000)); };
             setTimeout(blink, rnd(2000, 5000));
             setTimeout(shake, rnd(12000, 25000));
+            pet.addEventListener('click', zorpTap);
             updateZorpPet();
         }
 
@@ -2751,7 +2964,7 @@
             comets:    { text: (n) => `Apanha ${n} cometas`,                get: () => state.stats.comets,       avail: () => true,                          target: (r) => 2 + Math.floor(r() * 2) },
             upgrades:  { text: (n) => `Compra ${n} níveis de melhorias`,   get: () => state.stats.upgradesBought, avail: () => true,                        target: (r) => 3 + Math.floor(r() * 4) },
             overclock: { text: (n) => `Ativa a Sobrecarga ${n} vezes`,      get: () => state.stats.overclocks,   avail: () => isOverclockUnlocked(),         target: (r) => 1 + Math.floor(r() * 2) },
-            energy:    { text: (n) => `Gera ${formatNum(n)} Joules`,        get: () => state.stats.lifetimeEnergy, avail: () => true,                        target: () => Math.max(1000, Math.round(getEnergyPerSecond() * 900)) },
+            energy:    { text: (n) => `Gera ${formatNum(n)} Joules`,        get: () => state.stats.lifetimeEnergy, avail: () => true,                        target: () => Math.max(1000, Math.round(getEnergyPerSecond(true) * 900)) },
             bigbang:   { text: (n) => `Faz ${n} Big Bang`,                  get: () => state.stats.bigBangs,     avail: () => TAB_UNLOCK['tab-prestige'](),  target: () => 1 }
         };
 
@@ -2855,31 +3068,36 @@
 
         /* ---- Big Bang: cada um desbloqueia mais 10 elementos ---- */
         function getTierCap() { return Math.min(ELEMENTS.length, BALANCE.bbBlock * (state.stats.bigBangs + 1)); }
+        function bbCooldownLeft() {
+            if (getTierCap() < ELEMENTS.length) return 0;
+            return Math.max(0, state.lastBigBangAt + BALANCE.bbFinalCooldownH * 3600000 - Date.now());
+        }
         function canBigBang() {
             const cap = getTierCap();
-            return getPendingPrimordialMatter() > 0 && state.unlockedMaxTier >= cap;
+            return state.runEnergy >= BALANCE.bbMinEnergy && state.unlockedMaxTier >= cap && bbCooldownLeft() <= 0;
         }
         function updateBigBangUI() {
             const el = document.getElementById('bb-req'), cap = getTierCap();
             let msg = '';
             if (state.unlockedMaxTier < cap) {
                 msg = `${tr('Descobre o elemento')} ${cap} (${tr(ELEMENTS[cap - 1].name)}) ${tr('para poderes fazer o Big Bang.')}`;
-            } else if (cap < ELEMENTS.length && getPendingPrimordialMatter() > 0) {
+            } else if (cap < ELEMENTS.length && canBigBang()) {
                 msg = `${tr('Big Bang pronto: desbloqueia os próximos')} ${Math.min(BALANCE.bbBlock, ELEMENTS.length - cap)} ${tr('elementos.')}`;
             }
+            if (!msg && bbCooldownLeft() > 0) msg = `${tr('Próximo Big Bang disponível em')} ${fmtDur(bbCooldownLeft())}`;
             if (el._v !== msg) { el._v = msg; el.textContent = msg; el.classList.toggle('hidden', !msg); }
         }
 
         /* ---- Galáxia de fundo: gerada a partir do número de Big Bangs ---- */
         let galaxyCanvas = null, galaxyKey = '';
-        function buildGalaxy(w, h) {
+        function buildGalaxy(w, h, idx) {
             const dpr = window.devicePixelRatio || 1;
             const c = document.createElement('canvas');
             c.width = Math.max(1, Math.round(w * dpr));
             c.height = Math.max(1, Math.round(h * dpr));
             const g = c.getContext('2d');
             g.scale(dpr, dpr);
-            const rng = seededRng('galaxia' + state.stats.bigBangs);
+            const rng = seededRng('galaxia' + (idx === undefined ? state.stats.bigBangs : idx));
             const hue = Math.floor(rng() * 360);
             g.fillStyle = '#02040c';
             g.fillRect(0, 0, w, h);
@@ -2924,8 +3142,14 @@
             astro:   { name: 'Zorp Astronauta', rarity: 'epic',      body: '#e2e8f0', acc: 'helmet' },
             punk:    { name: 'Zorp Punk',       rarity: 'epic',      body: '#fb923c', acc: 'mohawk' },
             king:    { name: 'Zorp Rei',        rarity: 'legendary', body: '#facc15', acc: 'crown' },
-            cosmic:  { name: 'Zorp Cósmico',    rarity: 'legendary', body: '#e879f9', acc: 'halo' }
+            cosmic:  { name: 'Zorp Cósmico',    rarity: 'legendary', body: '#e879f9', acc: 'halo' },
+            founder: { name: 'Zorp Fundador',   rarity: 'epic',      body: '#f59e0b', acc: 'scarf', exclusive: true } // só no Pacote Inicial
         };
+        // Bónus de produção por skin da coleção (soma de todas as que tens)
+        const SKIN_BONUS = { common: 0.01, uncommon: 0.02, rare: 0.03, epic: 0.05, legendary: 0.10 };
+        function getSkinBonus() {
+            return Object.keys(state.skins.owned).reduce((t, id) => t + (state.skins.owned[id] && ALIEN_SKINS[id] ? SKIN_BONUS[ALIEN_SKINS[id].rarity] : 0), 0);
+        }
         const RARITY = {
             common:    { name: 'Comum',    color: '#94a3b8' },
             uncommon:  { name: 'Incomum',  color: '#4ade80' },
@@ -2947,6 +3171,7 @@
                 cap: '<path d="M16 24a16 14 0 0 1 32 0z" fill="#ef4444"/><rect x="14" y="23" width="36" height="4" rx="2" fill="#b91c1c"/><rect x="44" y="23" width="12" height="4" rx="2" fill="#b91c1c"/>',
                 tie: '<path d="M29 53l3-2 3 2-1 9h-4z" fill="#ef4444"/>',
                 flower: '<circle cx="46" cy="15" r="4" fill="#f472b6"/><circle cx="46" cy="15" r="1.6" fill="#fde047"/>',
+                scarf: '<path d="M16 50q16 9 32 0l-2 7q-14 7-28 0z" fill="#dc2626"/><path d="M40 54l5 9-6 1z" fill="#b91c1c"/>',
                 halo: '<ellipse cx="32" cy="9" rx="12" ry="3.5" fill="none" stroke="#fde047" stroke-width="2.5"/>'
             }[k.acc] || '';
             return `<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -2976,19 +3201,21 @@
             let r = Math.random(), pick = odds[odds.length - 1][0];
             for (const [k, pr] of odds) { if (r < pr) { pick = k; break; } r -= pr; }
             if (pick === 'none') return null;
-            const pool = Object.keys(ALIEN_SKINS).filter(id => ALIEN_SKINS[id].rarity === pick);
+            const pool = Object.keys(ALIEN_SKINS).filter(id => ALIEN_SKINS[id].rarity === pick && !ALIEN_SKINS[id].exclusive);
             return pool[Math.floor(Math.random() * pool.length)];
         }
 
         let crateSpinning = false;
         function resetCrateSpin() { crateSpinning = false; }
 
-        function openCrate(id) {
+        function openCrate(id, opts) {
             const c = CRATES.find(x => x.id === id);
             if (!c || crateSpinning) return null;
             if (id === 'free') {
-                if (state.skins.lastFree === dayKey()) return null;
-                state.skins.lastFree = dayKey();
+                if (!(opts && opts.extra)) {
+                    if (state.skins.lastFree === dayKey()) return null;
+                    state.skins.lastFree = dayKey();
+                }
             } else {
                 if (state.ether < c.cost) return null;
                 state.ether -= c.cost;
@@ -3060,10 +3287,11 @@
             re.textContent = r.name;
             re.style.color = r.color;
             document.getElementById('skin-card').style.borderColor = r.color;
+            document.getElementById('skin-prev-bonus').textContent = `Dá +${Math.round(SKIN_BONUS[k.rarity] * 100)}% de produção`;
             const where = CRATES.filter(c => c.odds.some(o => o[0] === k.rarity)).map(c => tr(c.name)).join(', ');
             document.getElementById('skin-prev-note').textContent = owned
                 ? (active ? tr('Skin equipada') : tr('Tens esta skin'))
-                : `${tr('Ainda não a tens')} · ${tr('Sai em')}: ${where}`;
+                : `${tr('Ainda não a tens')} · ${k.exclusive ? tr('Exclusiva do Pacote Inicial') : tr('Sai em') + ': ' + where}`;
             const eq = document.getElementById('btn-skin-equip');
             eq.disabled = !owned || active;
             eq.textContent = active ? 'Equipada' : 'Equipar';
@@ -3093,9 +3321,9 @@
                 sk += `<button id="skin-${id}" class="btn-press p-1.5 rounded-xl bg-slate-900/80 border flex flex-col items-center gap-0.5" style="border-color:${RARITY[k.rarity].color}55">
                     <div class="w-11 h-11">${alienSVG(id)}</div><div class="text-[9px] text-slate-300 leading-tight text-center">${k.name}</div></button>`;
             });
-            box.innerHTML = `<h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-amber-300"><i class="fa-solid fa-box-open mr-1"></i>Caixas de skins</h3>
+            box.innerHTML = `<div class="flex items-center justify-between"><h3 class="px-1 text-[11px] font-bold uppercase tracking-wider text-amber-300"><i class="fa-solid fa-box-open mr-1"></i>Caixas de skins</h3><a href="legal.html#caixas" target="_blank" rel="noopener" class="text-[10px] text-sky-300 underline">Probabilidades</a></div>
                 <div class="grid grid-cols-3 gap-2">${cr}</div>
-                <h3 class="px-1 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Coleção</h3>
+                <div class="flex items-center justify-between"><h3 class="px-1 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Coleção</h3><span id="skin-bonus-total" class="text-[10px] font-mono-num text-emerald-300"></span></div>
                 <div class="grid grid-cols-4 gap-1.5">${sk}</div>`;
             CRATES.forEach(c => document.getElementById(`crate-btn-${c.id}`).addEventListener('click', () => openCrate(c.id)));
             Object.keys(ALIEN_SKINS).forEach(id => document.getElementById(`skin-${id}`).addEventListener('click', () => openSkinPreview(id)));
@@ -3107,6 +3335,7 @@
         function updateCratesUI() {
             if (document.getElementById('tab-shop').classList.contains('hidden')) return;
             const set = (id, v) => { const e = document.getElementById(id); if (e._v !== v) { e._v = v; e.textContent = v; } };
+            set('skin-bonus-total', `Bónus da coleção: +${Math.round(getSkinBonus() * 100)}%`);
             const freeOk = state.skins.lastFree !== dayKey();
             set('crate-btn-free', freeOk ? 'Abrir grátis' : 'Volta amanhã');
             document.getElementById('crate-btn-free').disabled = !freeOk;
@@ -3120,6 +3349,343 @@
                 el.classList.toggle('ring-2', state.skins.active === id);
                 el.classList.toggle('ring-amber-400', state.skins.active === id);
             });
+        }
+
+        /* ---- Oferta única (Pacote Inicial) e Impulsos temporários ---- */
+        const STARTER = { eur: 0.99, ether: 20, skin: 'founder' };
+        const BOOSTS = [
+            { id: 'x2', name: 'Impulso Cósmico', mult: 2, minutes: 30, cost: 10 },
+            { id: 'x3', name: 'Hiperimpulso',    mult: 3, minutes: 60, cost: 30 }
+        ];
+        const BOOST_MAX_MS = 4 * 3600000; // o tempo acumulado de impulso nunca passa de 4 h
+
+        function grantStarter() {
+            if (state.starterBought) return false; // oferta única por conta
+            state.starterBought = true;
+            grantEther(STARTER.ether);
+            state.skins.owned[STARTER.skin] = true;
+            saveGame();
+            return true;
+        }
+
+        function isBoostActive() { return Date.now() < state.boost.endsAt; }
+
+        function buyBoost(id) {
+            const b = BOOSTS.find(x => x.id === id);
+            if (!b || state.ether < b.cost) return false;
+            const now = Date.now(), active = now < state.boost.endsAt;
+            if (active && state.boost.mult !== b.mult) { showShopToast('Já tens um impulso ativo.'); return false; }
+            const base = active ? state.boost.endsAt : now;
+            const end = Math.min(base + b.minutes * 60000, now + BOOST_MAX_MS);
+            if (end <= base) { showShopToast('Impulso já no máximo (4 h).'); return false; }
+            state.ether -= b.cost;
+            state.boost = { mult: b.mult, endsAt: end };
+            sfx.playDiscovery();
+            showShopToast(`Impulso x${b.mult} ativo!`);
+            saveGame();
+            updateUI();
+            return true;
+        }
+
+        function buildOffersUI() {
+            const boosts = BOOSTS.map(b => `<div class="p-2.5 rounded-2xl bg-slate-900/80 border border-fuchsia-900/50 flex flex-col items-center gap-1 text-center">
+                    <div class="text-lg font-bold font-mono-num text-fuchsia-300">x${b.mult}</div>
+                    <div class="text-[11px] font-semibold text-white leading-tight">${b.name}</div>
+                    <div class="text-[9px] text-slate-400 leading-tight">${b.minutes} min de produção x${b.mult}</div>
+                    <button id="boost-btn-${b.id}" class="btn-press w-full py-1.5 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 disabled:bg-slate-800 disabled:text-slate-500 text-[11px] font-mono-num font-bold text-white">${b.cost} Æ</button></div>`).join('');
+            document.getElementById('offers-box').innerHTML = `
+                <div id="starter-card" class="p-3 rounded-2xl border border-amber-400/60 bg-gradient-to-br from-amber-950/60 to-slate-900 flex items-center gap-3">
+                    <div class="w-16 h-16 shrink-0 alien-bob">${alienSVG(STARTER.skin)}</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-amber-300">Oferta única</div>
+                        <div class="text-sm font-bold text-white">Pacote Inicial</div>
+                        <div class="text-[11px] text-slate-300 leading-snug">${STARTER.ether} Æ + skin exclusiva Zorp Fundador</div>
+                    </div>
+                    <button id="starter-btn" class="btn-press px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono-num font-bold shrink-0">${formatEur(STARTER.eur)}</button>
+                </div>
+                <h3 class="px-1 pt-1 text-[11px] font-bold uppercase tracking-wider text-fuchsia-300"><i class="fa-solid fa-bolt mr-1"></i>Impulsos</h3>
+                <div class="grid grid-cols-2 gap-2">${boosts}</div>`;
+            document.getElementById('starter-btn').addEventListener('click', () => openShopConfirm('starter', STARTER));
+            BOOSTS.forEach(b => document.getElementById(`boost-btn-${b.id}`).addEventListener('click', () => buyBoost(b.id)));
+        }
+
+        function updateOffersUI() {
+            if (document.getElementById('tab-shop').classList.contains('hidden')) return;
+            document.getElementById('starter-card').classList.toggle('hidden', !!state.starterBought);
+            const active = isBoostActive();
+            BOOSTS.forEach(b => { document.getElementById(`boost-btn-${b.id}`).disabled = state.ether < b.cost || (active && state.boost.mult !== b.mult); });
+        }
+
+        function updateBoostBadge() {
+            const el = document.getElementById('boost-badge'), on = isBoostActive();
+            el.classList.toggle('hidden', !on);
+            if (!on) return;
+            const t = `x${state.boost.mult} · ${fmtDur(state.boost.endsAt - Date.now())}`;
+            if (el._v !== t) { el._v = t; el.textContent = t; }
+        }
+
+        /* ---- Zorp vivo: dicas, avisos e história que se desbloqueia com a amizade ---- */
+        const ZORP_STORY_AT = [3, 12, 30, 60, 100, 150]; // toques necessários para cada capítulo
+        const ZORP_STORY = [
+            'Eu venho de um planeta sem átomos. Quando vi o teu laboratório, fiquei fascinado!',
+            'No meu planeta os elementos eram invisíveis. Aqui consigo vê-los a dançar.',
+            'Sabes porque gosto de galáxias? Cada uma é um universo que nunca vi antes.',
+            'Já tenho uma coleção de roupas, mas ainda me falta uma lendária.',
+            'Quando chegares à Singularidade, conto-te o meu maior segredo.',
+            'Obrigado por seres meu amigo. Este universo é melhor contigo.'
+        ];
+        const ZORP_TIPS = [
+            'Dica: junta elementos diferentes para criar compostos e ganhar bónus.',
+            'Dica: desliga o Colisor Automático para guardares átomos para um composto.',
+            'Dica: os cometas dão energia, átomos grátis ou fundem tudo de uma vez. Toca neles!',
+            'Dica: faz um Big Bang a cada 10 elementos para desbloqueares os seguintes.',
+            'Dica: a Sobrecarga multiplica a produção durante uns segundos.',
+            'Dica: volta todos os dias para a caixa grátis e as missões.'
+        ];
+        const ZORP_ALERTS = {
+            comet: 'Olha! Um cometa! Toca nele!',
+            bb: 'Já podes fazer um Big Bang!',
+            daily: 'Tens uma missão diária por recolher!',
+            crate: 'Tens uma caixa grátis à espera na Loja!'
+        };
+        let zorpLastTip = -1, zorpBubbleTimer = null;
+
+        function zorpAlert() {
+            if (activeComet) return 'comet';
+            if (canBigBang()) return 'bb';
+            if (TAB_UNLOCK['tab-achievements']() && dailyReady()) return 'daily';
+            if (TAB_UNLOCK['tab-shop']() && state.skins.lastFree !== dayKey()) return 'crate';
+            return null;
+        }
+
+        function zorpTap() {
+            state.zorpTaps++;
+            const lvl = ZORP_STORY_AT.filter(n => state.zorpTaps >= n).length;
+            const alert = zorpAlert();
+            let text;
+            if (alert) {
+                text = ZORP_ALERTS[alert];
+            } else if (state.zorpStory < lvl) {
+                text = ZORP_STORY[state.zorpStory++]; // capítulo novo
+                saveGame();
+            } else {
+                let i;
+                do { i = Math.floor(Math.random() * ZORP_TIPS.length); } while (i === zorpLastTip && ZORP_TIPS.length > 1);
+                zorpLastTip = i;
+                text = ZORP_TIPS[i];
+            }
+            document.getElementById('zorp-bubble-text').textContent = text;
+            document.getElementById('zorp-bubble-lv').textContent = `Amizade ${lvl}/${ZORP_STORY.length}`;
+            const b = document.getElementById('zorp-bubble');
+            b.classList.remove('hidden');
+            clearTimeout(zorpBubbleTimer);
+            zorpBubbleTimer = setTimeout(() => b.classList.add('hidden'), 6000);
+            const pet = document.getElementById('zorp-pet');
+            pet.classList.remove('zorp-jump');
+            void pet.offsetWidth;
+            pet.classList.add('zorp-jump');
+            setTimeout(() => pet.classList.remove('zorp-jump'), 650);
+            const rect = canvas.parentElement.getBoundingClientRect();
+            spawnSparkBurst(30, (rect.height || 240) - 30, '#fde047', 8);
+            sfx.playTap();
+        }
+
+        /* ---- Atlas de galáxias: uma por Big Bang, com nome ---- */
+        const GAL_NAMES = ['Andro', 'Cygna', 'Vela', 'Orion', 'Lyra', 'Zephyr', 'Tauri', 'Pavo', 'Hydra', 'Corvi', 'Draco', 'Aquila', 'Fornax', 'Lupus', 'Mensa', 'Norma'];
+        let atlasKey = '';
+        const atlasThumbs = {};
+        function escHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+        function galaxyName(idx) {
+            if (state.galaxyNames[idx]) return state.galaxyNames[idx];
+            const r = seededRng('nomegalaxia' + idx);
+            return GAL_NAMES[Math.floor(r() * GAL_NAMES.length)] + ' ' + (10 + Math.floor(r() * 89));
+        }
+
+        function renameGalaxy(idx) {
+            const cur = galaxyName(idx);
+            const n = prompt(tr('Dá um nome a esta galáxia:'), cur);
+            if (n === null) return;
+            const clean = String(n).trim().slice(0, 24);
+            if (clean) state.galaxyNames[idx] = clean; else delete state.galaxyNames[idx];
+            saveGame();
+            updateUI();
+        }
+
+        function buildAtlasUI() {
+            const host = document.createElement('div');
+            host.className = 'pt-3 space-y-2';
+            host.innerHTML = `<div class="flex items-center justify-between px-1"><div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-violet-300">Atlas de Galáxias</h2>
+                <p class="text-[11px] text-slate-500">Cada Big Bang cria uma galáxia nova. Toca no nome para a renomear.</p></div>
+                <span id="atlas-count" class="text-[11px] font-mono-num px-2 py-1 rounded-full bg-violet-950 text-violet-300 border border-violet-800/60 shrink-0"></span></div>
+                <div id="atlas-grid" class="grid grid-cols-2 gap-2 pb-2"></div>`;
+            document.getElementById('tab-prestige').appendChild(host);
+        }
+
+        function updateAtlasUI() {
+            if (document.getElementById('tab-prestige').classList.contains('hidden')) return;
+            const n = state.stats.bigBangs;
+            const key = `${n}|${state.unlockedMaxTier}|${currentLang}|${JSON.stringify(state.galaxyNames)}`;
+            if (key === atlasKey) return;
+            atlasKey = key;
+            const first = Math.max(0, n - 59); // no máximo as 60 mais recentes
+            let html = '';
+            for (let i = n; i >= first; i--) {
+                const best = Math.max(1, (i === n ? state.unlockedMaxTier : state.galaxyBest[i]) || 1), el = ELEMENTS[best - 1];
+                html += `<div class="p-2 rounded-2xl bg-slate-900/80 border ${i === n ? 'border-amber-400/60' : 'border-slate-800'} space-y-1">
+                    <div id="atlas-th-${i}" class="w-full rounded-lg overflow-hidden"></div>
+                    <button id="atlas-name-${i}" class="w-full text-left text-xs font-semibold text-white truncate">${escHtml(galaxyName(i))} <i class="fa-solid fa-pen text-[9px] text-slate-500"></i></button>
+                    <div class="text-[10px] text-slate-400"><span>Galáxia ${i + 1}</span>${i === n ? ' · <span class="text-amber-300">Atual</span>' : ''}</div>
+                    <div class="text-[10px] text-slate-500">${tr('Elemento mais alto')}: ${el.symbol} ${tr(el.name)}</div></div>`;
+            }
+            document.getElementById('atlas-grid').innerHTML = html;
+            for (let i = n; i >= first; i--) {
+                if (!atlasThumbs[i]) {
+                    const c = buildGalaxy(180, 110, i);
+                    c.style.width = '100%';
+                    c.style.height = 'auto';
+                    atlasThumbs[i] = c;
+                }
+                document.getElementById(`atlas-th-${i}`).appendChild(atlasThumbs[i]);
+                document.getElementById(`atlas-name-${i}`).addEventListener('click', () => renameGalaxy(i));
+            }
+            document.getElementById('atlas-count').textContent = String(n + 1);
+        }
+
+        /* ---- Anúncios: caixa extra por anúncio e compra "Sem Anúncios" ----
+           ADS.client = 'ca-pub-XXXXXXXXXXXXXXXX' liga o Google Ad Placement API (precisa de conta aprovada e de consentimento).
+           Sem client, os anúncios ficam desligados; só no Modo de testes aparece um anúncio de demonstração. */
+        const ADS = { client: '', bannerSlot: '', test: true, rewardedPerDay: 3 };
+        const NOADS = { eur: 2.99 };
+        let pendingAd = null, adTimer = null;
+
+        function isDebugOn() { try { return DEBUG_AVAILABLE && localStorage.getItem('alchemist_debug') === '1'; } catch (e) { return false; } }
+        function adsAvailable() { return !!ADS.client || isDebugOn(); }
+        function grantNoAds() { state.noAds = true; saveGame(); }
+        function adsLeft() {
+            if (state.ads.day !== dayKey()) { state.ads.day = dayKey(); state.ads.watched = 0; }
+            return Math.max(0, ADS.rewardedPerDay - state.ads.watched);
+        }
+
+        function setupAds() {
+            if (ADS.client) {
+                const sc = document.createElement('script');
+                sc.async = true;
+                sc.crossOrigin = 'anonymous';
+                sc.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS.client}`;
+                if (ADS.test) sc.setAttribute('data-adbreak-test', 'on');
+                document.head.appendChild(sc);
+                window.adsbygoogle = window.adsbygoogle || [];
+                window.adBreak = window.adConfig = function (o) { window.adsbygoogle.push(o); };
+                window.adConfig({ preloadAdBreaks: 'on', sound: 'on' });
+            }
+            document.getElementById('btn-ad-claim').addEventListener('click', () => finishDemoAd(true));
+            document.getElementById('btn-ad-cancel').addEventListener('click', () => finishDemoAd(false));
+        }
+
+        // Anúncio com recompensa: rede real se houver; demonstração só no Modo de testes
+        function showRewardedAd(onReward, onFail) {
+            if (ADS.client && typeof window.adBreak === 'function') {
+                window.adBreak({
+                    type: 'reward', name: 'caixa-extra',
+                    beforeReward: (showAdFn) => showAdFn(),
+                    adViewed: () => onReward(),
+                    adDismissed: () => onFail('dismissed'),
+                    adBreakDone: (info) => { if (info && info.breakStatus && !['viewed', 'dismissed'].includes(info.breakStatus)) onFail(info.breakStatus); }
+                });
+                return;
+            }
+            if (!isDebugOn()) { onFail('sem-rede'); return; }
+            pendingAd = { onReward, onFail };
+            let left = 5;
+            const claim = document.getElementById('btn-ad-claim'), cnt = document.getElementById('ad-count');
+            claim.disabled = true;
+            cnt.textContent = `Podes fechar em ${left} s`;
+            document.getElementById('modal-ad').classList.remove('hidden');
+            clearInterval(adTimer);
+            adTimer = setInterval(() => {
+                left--;
+                if (left <= 0) { clearInterval(adTimer); claim.disabled = false; cnt.textContent = 'Anúncio terminado'; }
+                else cnt.textContent = `Podes fechar em ${left} s`;
+            }, 1000);
+        }
+
+        function finishDemoAd(ok) {
+            clearInterval(adTimer);
+            document.getElementById('modal-ad').classList.add('hidden');
+            const a = pendingAd;
+            pendingAd = null;
+            if (!a) return;
+            if (ok) a.onReward(); else a.onFail('fechado');
+        }
+
+        function openExtraCrate() {
+            if (adsLeft() <= 0) { showShopToast('Já usaste as caixas extra de hoje.'); return; }
+            const open = () => {
+                if (crateSpinning || adsLeft() <= 0) return;
+                state.ads.watched++;
+                openCrate('free', { extra: true });
+            };
+            if (state.noAds) open();
+            else showRewardedAd(open, () => showShopToast('Anúncio não concluído. Tenta outra vez.'));
+        }
+
+        function buildAdsUI() {
+            document.getElementById('ads-box').innerHTML = `
+                <div id="extra-crate-card" class="p-3 rounded-2xl bg-slate-900/80 border border-sky-900/50 flex items-center justify-between gap-3">
+                    <div class="min-w-0"><div class="text-sm font-semibold text-white">Caixa extra</div>
+                    <div class="text-[11px] text-slate-400 leading-snug">Vê um anúncio e abre mais uma caixa grátis.</div>
+                    <div id="ad-left" class="text-[10px] font-mono-num text-sky-300"></div></div>
+                    <button id="ad-crate-btn" class="btn-press px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 text-xs font-bold text-white shrink-0"></button>
+                </div>
+                <div id="noads-card" class="p-3 rounded-2xl bg-slate-900/80 border border-emerald-900/50 flex items-center justify-between gap-3">
+                    <div class="min-w-0"><div class="text-sm font-semibold text-white">Sem Anúncios</div>
+                    <div class="text-[11px] text-slate-400 leading-snug">Remove os anúncios e abre as caixas extra sem ver nenhum.</div></div>
+                    <button id="noads-btn" class="btn-press px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-mono-num font-bold text-white shrink-0">${formatEur(NOADS.eur)}</button>
+                </div>
+                <div id="ad-banner" class="hidden text-center text-[10px] text-slate-500 py-3 rounded-xl border border-dashed border-slate-700"></div>`;
+            document.getElementById('ad-crate-btn').addEventListener('click', openExtraCrate);
+            document.getElementById('noads-btn').addEventListener('click', () => openShopConfirm('noads', NOADS));
+        }
+
+        let bannerBuilt = false;
+        function updateAdsUI() {
+            if (document.getElementById('tab-shop').classList.contains('hidden')) return;
+            const set = (id, v) => { const e = document.getElementById(id); if (e._v !== v) { e._v = v; e.textContent = v; } };
+            const avail = adsAvailable(), left = adsLeft();
+            document.getElementById('extra-crate-card').classList.toggle('hidden', !avail && !state.noAds);
+            set('ad-left', `${left}/${ADS.rewardedPerDay} hoje`);
+            set('ad-crate-btn', state.noAds ? 'Abrir caixa extra' : 'Ver anúncio');
+            document.getElementById('ad-crate-btn').disabled = left <= 0 || crateSpinning;
+            document.getElementById('noads-card').classList.toggle('hidden', !!state.noAds || (!avail && !SHOP_DEMO_MODE && !PAYMENTS_API_URL));
+            // espaço publicitário na Loja (desaparece com "Sem Anúncios")
+            const ban = document.getElementById('ad-banner');
+            const showBan = !state.noAds && ((ADS.client && ADS.bannerSlot) || isDebugOn());
+            ban.classList.toggle('hidden', !showBan);
+            if (showBan && !bannerBuilt) {
+                bannerBuilt = true;
+                if (ADS.client && ADS.bannerSlot) {
+                    ban.innerHTML = `<ins class="adsbygoogle" style="display:block" data-ad-client="${ADS.client}" data-ad-slot="${ADS.bannerSlot}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+                    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+                } else {
+                    ban.textContent = 'Espaço publicitário (demonstração)';
+                }
+            }
+        }
+
+        /* ---- Aviso permanente quando um par não pode fundir (Big Bang, tempo ou energia) ---- */
+        function updateBlockBanner() {
+            const el = document.getElementById('block-banner'), seen = {};
+            for (const p of liveParticles) { if (!p.merging && p.tier < ELEMENTS.length) seen[p.tier] = (seen[p.tier] || 0) + 1; }
+            let msg = '';
+            for (const t of Object.keys(seen).map(Number).filter(x => seen[x] >= 2).sort((a, b) => a - b)) {
+                const nt = t + 1;
+                if (nt > getTierCap()) { msg = tr('Faz um Big Bang para desbloquear mais elementos'); break; }
+                if (isTierLocked(nt)) { msg = `${tr('Estabilizando')} ${tr(ELEMENTS[nt - 1].name)}: ${fmtDur(state.tierLockUntil - Date.now())}`; break; }
+                if (getDiscoveryCost(nt) > state.energy) { msg = `${tr('Estabilizar')} ${tr(ELEMENTS[nt - 1].name)}: ${formatNum(getDiscoveryCost(nt))} E`; break; }
+            }
+            if (el._v !== msg) { el._v = msg; el.textContent = msg; el.classList.toggle('hidden', !msg); }
         }
 
         function hydrateState(parsed) {
@@ -3158,13 +3724,13 @@
             return s;
         }
 
-        function getEnergyPerSecond() {
+        function getEnergyPerSecond(stable) {
             let baseSum = 0;
             for (const p of liveParticles) {
                 const el = ELEMENTS[p.tier - 1];
                 if (el) baseSum += el.baseProd * (p.iso ? 5 : 1);
             }
-            return baseSum * getGlobalMultiplier();
+            return baseSum * getGlobalMultiplier(stable);
         }
 
         function getPendingPrimordialMatter() {
@@ -3223,7 +3789,7 @@
         }
 
         function getShopJoules(pack) {
-            return Math.max(pack.floor, Math.floor(getEnergyPerSecond() * pack.minutes * 60));
+            return Math.max(pack.floor, Math.floor(getEnergyPerSecond(true) * pack.minutes * 60));
         }
 
         /* PAGAMENTO: ponto único de integração.
@@ -3238,7 +3804,7 @@
             if (!PAYMENTS_API_URL) throw new Error('Pagamentos reais ainda não estão configurados.');
             if (!fbUser || !fbUser.getIdToken) throw new Error('Entra com a tua conta Google para comprar.');
             const list = kind === 'ether' ? SHOP_ETHER_PACKS : SHOP_JOULE_PACKS;
-            const packId = (kind === 'ether' ? 'e' : 'j') + list.indexOf(pack);
+            const packId = kind === 'noads' ? 'n0' : kind === 'starter' ? 's0' : (kind === 'ether' ? 'e' : 'j') + list.indexOf(pack);
             let d, why = '';
             try {
                 const r = await fetch(`${payApi()}/checkout`, {
@@ -3303,7 +3869,9 @@
                     if (r.status === 409) { pendingPaid = null; clearPending(); cleanPaymentUrl(); return; }
                     throw new Error(d.error || 'erro');
                 }
-                if (d.kind === 'ether') grantEther(SHOP_ETHER_PACKS[d.index].ether);
+                if (d.kind === 'noads') grantNoAds();
+                else if (d.kind === 'starter') grantStarter();
+                else if (d.kind === 'ether') grantEther(SHOP_ETHER_PACKS[d.index].ether);
                 else state.energy += getShopJoules(SHOP_JOULE_PACKS[d.index]);
                 state.paidSessions[session] = Date.now();
                 pendingPaid = null;
@@ -3388,6 +3956,7 @@
 
             document.getElementById('btn-shop-cancel').addEventListener('click', closeShopConfirm);
             document.getElementById('btn-shop-confirm').addEventListener('click', confirmShopPurchase);
+            document.getElementById('shop-consent').addEventListener('change', () => { document.getElementById('btn-shop-confirm').disabled = !document.getElementById('shop-consent').checked; });
             document.getElementById('shop-demo-note').classList.toggle('hidden', !SHOP_DEMO_MODE);
         }
 
@@ -3407,11 +3976,15 @@
         function openShopConfirm(kind, pack) {
             pendingPurchase = { kind, pack };
             const isEther = kind === 'ether';
-            document.getElementById('shop-confirm-desc').textContent = isEther ? 'Pacote de Éter' : 'Pacote de Joules';
-            document.getElementById('shop-confirm-amount').textContent = isEther
+            document.getElementById('shop-confirm-desc').textContent = kind === 'noads' ? 'Sem Anúncios' : kind === 'starter' ? 'Pacote Inicial' : (isEther ? 'Pacote de Éter' : 'Pacote de Joules');
+            document.getElementById('shop-confirm-amount').textContent = kind === 'noads' ? 'Sem anúncios' : kind === 'starter' ? `${pack.ether} Æ + skin` : isEther
                 ? `${pack.ether} Æ`
                 : `${formatNum(getShopJoules(pack))} E`;
             document.getElementById('shop-confirm-price').textContent = `Preço: ${formatEur(pack.eur)}`;
+            const needConsent = !SHOP_DEMO_MODE; // pagamentos reais exigem aceitação expressa
+            document.getElementById('shop-consent').checked = false;
+            document.getElementById('shop-consent-row').classList.toggle('hidden', !needConsent);
+            document.getElementById('btn-shop-confirm').disabled = needConsent;
             document.getElementById('modal-shop-confirm').classList.remove('hidden');
         }
 
@@ -3422,13 +3995,20 @@
 
         async function confirmShopPurchase() {
             if (!pendingPurchase) return;
+            if (!SHOP_DEMO_MODE && !document.getElementById('shop-consent').checked) return;
             const { kind, pack } = pendingPurchase;
             const btn = document.getElementById('btn-shop-confirm');
             btn.disabled = true;
             try {
                 const res = await processPayment(kind, pack);
                 if (res === 'redirect') return;
-                if (kind === 'ether') {
+                if (kind === 'noads') {
+                    grantNoAds();
+                    showShopToast('Anúncios removidos!');
+                } else if (kind === 'starter') {
+                    grantStarter();
+                    showShopToast('Pacote Inicial recebido!');
+                } else if (kind === 'ether') {
                     grantEther(pack.ether);
                     showShopToast(`+${pack.ether} Æ adicionados!`);
                 } else {
@@ -3582,6 +4162,7 @@
 
             state.energy -= cost;
             state.spawnsBought++;
+            state.spawnCounts[getStartingTier()] = (state.spawnCounts[getStartingTier()] || 0) + 1; // cada elemento tem o seu próprio preço
             const startTier = getStartingTier();
 
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -4070,10 +4651,9 @@
 
             // Prestige multiplier badge
             const prestigeBadge = document.getElementById('prestige-mult-badge');
-            if (state.primordialMatter > 0) {
+            if (state.stats.bigBangs > 0) {
                 prestigeBadge.classList.remove('hidden');
-                const mult = (1 + state.primordialMatter * 0.25).toFixed(2);
-                document.getElementById('prestige-mult-val').textContent = mult;
+                document.getElementById('prestige-mult-val').textContent = formatNum(Math.pow(2, state.stats.bigBangs));
             } else {
                 prestigeBadge.classList.add('hidden');
             }
@@ -4137,6 +4717,11 @@
             updateTabs();
             updateZorpPet();
             updateCratesUI();
+            updateOffersUI();
+            updateBoostBadge();
+            updateAdsUI();
+            updateBlockBanner();
+            updateAtlasUI();
             updateInjectPicker();
             updateTutorial();
             applyAccordions();
@@ -4147,11 +4732,11 @@
 
             // Big Bang / Prestige Tab
             const pendingMatter = getPendingPrimordialMatter();
-            const bbMult = 1 + state.primordialMatter * 0.25, bbNew = 1 + (state.primordialMatter + pendingMatter) * 0.25;
-            document.getElementById('current-matter').textContent = `x${bbMult.toFixed(2)}`;
-            document.getElementById('current-matter-bonus').textContent = `+${formatNum(state.primordialMatter * 25)}% Produção`;
-            document.getElementById('pending-matter').textContent = `x${bbNew.toFixed(2)}`;
-            document.getElementById('btn-matter-gain').textContent = `x${bbMult.toFixed(2)} → x${bbNew.toFixed(2)}`;
+            const bbMult = Math.pow(2, state.stats.bigBangs), bbNew = bbMult * 2;
+            document.getElementById('current-matter').textContent = `x${formatNum(bbMult)}`;
+            document.getElementById('current-matter-bonus').textContent = `+${formatNum((bbMult - 1) * 100)}% Produção`;
+            document.getElementById('pending-matter').textContent = `x${formatNum(bbNew)}`;
+            document.getElementById('btn-matter-gain').textContent = `x${formatNum(bbMult)} → x${formatNum(bbNew)}`;
             document.getElementById('btn-trigger-bigbang').disabled = !canBigBang();
             updateBigBangUI();
 
@@ -4244,8 +4829,8 @@
         }
 
         function triggerBigBang() {
+            if (!canBigBang()) return;
             const gain = getPendingPrimordialMatter();
-            if (gain <= 0 || !canBigBang()) return;
 
             const rect = canvas.parentElement.getBoundingClientRect();
             spawnSparkBurst(rect.width / 2, rect.height / 2, '#e879f9', 45);
@@ -4253,6 +4838,7 @@
             sfx.playDiscovery();
 
             state.primordialMatter += gain;
+            state.galaxyBest[state.stats.bigBangs] = state.unlockedMaxTier; // elemento mais alto desta galáxia
             state.stats.bigBangs++;
             grantEther(1 + Math.floor(gain / 20), rect.width / 2, rect.height / 2 - 20);
 
@@ -4260,6 +4846,8 @@
             state.energy = 20;
             state.runEnergy = 20;
             state.spawnsBought = 0;
+            state.spawnCounts = {};
+            state.lastBigBangAt = Date.now();
             state.upgrades = getDefaultState().upgrades;
             state.particles = getStartParticles(); // Memória Quântica
             syncStateParticlesToLive();
@@ -4285,11 +4873,17 @@
             buildAchievements();
             buildDailyUI();
             buildCratesUI();
+            buildOffersUI();
+            buildAdsUI();
+            setupAds();
+            buildAtlasUI();
             buildResearchUI();
             buildRecipesUI();
             setupAccordions();
             buildShop();
             setupDebug();
+            setupFeedback();
+            setupPwa();
             handlePaymentUrl();
             setupTabs();
             setupInjectPicker();
