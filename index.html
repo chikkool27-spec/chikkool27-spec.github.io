@@ -110,6 +110,7 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs text-slate-400 font-mono-num">
                         <span>+<span id="eps-display" class="text-emerald-400 font-semibold">0.0</span> E/s</span>
+                        <span id="rule-badge" class="hidden px-1.5 py-0.2 rounded bg-slate-900/80 border border-fuchsia-700/50 text-fuchsia-300 text-[10px]"></span>
                         <span id="boost-badge" class="hidden px-1.5 py-0.2 rounded bg-fuchsia-950/80 border border-fuchsia-700/50 text-fuchsia-300 text-[10px] font-mono-num"></span>
                         <span id="ether-badge" class="hidden px-1.5 py-0.2 rounded bg-teal-950/80 border border-teal-700/50 text-teal-300 text-[10px]">
                             <i class="fa-solid fa-gem mr-0.5"></i><span id="ether-badge-val">0</span> Æ
@@ -890,7 +891,7 @@
         /* Colisor Automático: compra única + interruptor ON/OFF (sem níveis). */
         const AUTO_MERGE_INTERVAL = 0.3; // segundos entre fusões automáticas
         function isAutoMergeActive() {
-            return state.upgrades.autoMerge > 0 && state.autoMergeOn;
+            return state.upgrades.autoMerge > 0 && state.autoMergeOn && !ruleVal('noCollider', false);
         }
 
         /* Melhorias extra do laboratório (Joules): mecânicas diferentes das clássicas. */
@@ -1148,6 +1149,8 @@
                 paidSessions: {},
                 tierLockUntil: 0,
                 starterBought: false,
+                cosmicPoints: 0,
+                cosmicTree: {},
                 noAds: false,
                 ads: { day: '', watched: 0 },
                 spawnCounts: {},
@@ -1218,12 +1221,12 @@
         }
 
         function getMaxCapacity() {
-            return 6 + state.upgrades.capacity * 2 + state.research.levels.slots * 2;
+            return 6 + state.upgrades.capacity * 2 + state.research.levels.slots * 2 + cosmicSum('cap') + ruleVal('cap', 0);
         }
 
         // Nível máximo do injetor: nunca ultrapassa o elemento mais alto já descoberto (só se descobre fundindo)
         function getAutoSpawnInterval(l) {
-            return Math.max(BALANCE.autoSpawnMin, BALANCE.autoSpawnBase * Math.pow(BALANCE.autoSpawnRatio, l));
+            return Math.max(BALANCE.autoSpawnMin, BALANCE.autoSpawnBase * Math.pow(BALANCE.autoSpawnRatio, l)) * ruleVal('autoSpawn', 1);
         }
         function updateAutoSpawnDesc() {
             const l = state.upgrades.autoSpawn, cur = getAutoSpawnInterval(l).toFixed(1), next = getAutoSpawnInterval(l + 1).toFixed(1);
@@ -1249,7 +1252,7 @@
         function getSpawnCost() {
             const baseTier = getStartingTier();
             const tierFactor = Math.pow(BALANCE.prodBase * 1.07, baseTier - 1); // custo acompanha a produção do nível
-            return Math.floor(10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), Math.min(state.spawnCounts[baseTier] || 0, BALANCE.spawnCostCap)));
+            return Math.floor(spawnPriceMult() * 10 * tierFactor * Math.pow(getSpawnGrowth(state.upgrades.costCut), Math.min(state.spawnCounts[baseTier] || 0, BALANCE.spawnCostCap)));
         }
 
         // Quanto o custo de injeção sobe por cada átomo comprado (18% base; Síntese Eficiente reduz até 6%)
@@ -1261,15 +1264,15 @@
             const lvl = state.upgrades[type];
             switch (type) {
                 case 'capacity':
-                    return Math.floor(BALANCE.costScale * 50 * Math.pow(2.3, lvl));
+                    return Math.floor(getCostScale() * 50 * Math.pow(2.3, lvl));
                 case 'spawnTier':
-                    return Math.floor(BALANCE.costScale * 300 * Math.pow(5.5, lvl));
+                    return Math.floor(getCostScale() * 300 * Math.pow(5.5, lvl));
                 case 'autoMerge':
-                    return Math.floor(BALANCE.costScale * 500); // compra única
+                    return Math.floor(getCostScale() * 500); // compra única
                 case 'resonance':
-                    return Math.floor(BALANCE.costScale * 100 * Math.pow(2.1, lvl));
+                    return Math.floor(getCostScale() * 100 * Math.pow(2.1, lvl));
                 case 'autoSpawn':
-                    return Math.floor(BALANCE.costScale * 500 * Math.pow(3.4, lvl));
+                    return Math.floor(getCostScale() * 500 * Math.pow(3.4, lvl));
             }
             return 999999;
         }
@@ -1283,7 +1286,7 @@
             const etherBonus = 1 + state.etherUpgrades.etherCore * 0.1;
             const overclockBonus = !stable && isOverclockActive() ? getOverclockPower() : 1;
             const boostBonus = !stable && isBoostActive() ? state.boost.mult : 1;
-            const skinBonus = 1 + getSkinBonus();
+            const skinBonus = (1 + getSkinBonus()) * (1 + cosmicSum('prod') / 100) * ruleVal('prod', 1);
             const labBonus = (1 + getCompoundBonus()) * (1 + 0.1 * state.research.levels.prod);
             return discoveryBonus * resonanceBonus * prestigeBonus * kineticBonus * etherBonus * overclockBonus * labBonus * boostBonus * skinBonus;
         }
@@ -1297,7 +1300,7 @@
         }
 
         function getFusionJumpChance() {
-            return state.etherUpgrades.fusionLuck * 0.005;
+            return state.etherUpgrades.fusionLuck * 0.005 + cosmicSum('jump') / 100;
         }
 
         function getOfflineCapSeconds() {
@@ -1309,7 +1312,7 @@
         }
 
         function getTapMultiplier() {
-            return BALANCE.tapBase + state.upgrades.tapPower * BALANCE.tapPerLvl;
+            return (BALANCE.tapBase + state.upgrades.tapPower * BALANCE.tapPerLvl) * ruleVal('tap', 1);
         }
 
         /* Éter nas fusões: muito raro e só em níveis altos (0,15% no nível 9, até 1,2%).
@@ -1453,7 +1456,7 @@
         /* ---- Melhorias extra do laboratório (Joules) ---- */
         function getLabExtraCost(key) {
             const c = LAB_EXTRA[key];
-            return Math.floor(BALANCE.costScale * c.base * Math.pow(c.growth, state.upgrades[key]));
+            return Math.floor(getCostScale() * c.base * Math.pow(c.growth, state.upgrades[key]));
         }
 
         function buyLabExtra(key) {
@@ -1649,7 +1652,7 @@
         let cometTimer = 25 + Math.random() * 20; // o primeiro chega cedo
 
         function getCometInterval() {
-            const radar = Math.max(0.35, 1 - state.etherUpgrades.cometRadar * 0.03) * (1 - 0.06 * state.research.levels.comet) * (hasCompound('glucose') ? 0.8 : 1);
+            const radar = Math.max(0.35, 1 - state.etherUpgrades.cometRadar * 0.03) * (1 - 0.06 * state.research.levels.comet) * cometFreqMult();
             return (60 + Math.random() * 60) * radar;
         }
 
@@ -1706,7 +1709,7 @@
             state.stats.comets++;
 
             const lvlYield = state.etherUpgrades.cometYield;
-            const yieldMult = 1 + lvlYield * 0.1;
+            const yieldMult = (1 + lvlYield * 0.1) * cometYieldMult();
             const roll = Math.random();
             const freeSlots = getMaxCapacity() - liveParticles.length;
             let done = false;
@@ -2020,6 +2023,39 @@
             ["Terminar sessão", "Sign out", "Cerrar sesión", "Se déconnecter"],
             ["Login Google ainda não configurado: define FIREBASE_CONFIG no código.", "Google login not configured yet: set FIREBASE_CONFIG in the code.", "Login de Google sin configurar: define FIREBASE_CONFIG en el código.", "Connexion Google non configurée : définis FIREBASE_CONFIG dans le code."],
             ["Estabilizar", "Stabilize", "Estabilizar", "Stabiliser"],
+            ["Universo Frio", "Cold Universe", "Universo frío", "Univers froid"],
+            ["Cometas 2x mais frequentes e com recompensas 2x maiores, mas a produção é 30% menor.", "Comets 2x more frequent with 2x rewards, but production is 30% lower.", "Cometas 2x más frecuentes con recompensas 2x, pero la producción es un 30% menor.", "Comètes 2x plus fréquentes avec récompenses 2x, mais production 30% plus faible."],
+            ["Universo Denso", "Dense Universe", "Universo denso", "Univers dense"],
+            ["+10 espaços na câmara, mas injetar custa o dobro.", "+10 chamber slots, but injecting costs double.", "+10 espacios en la cámara, pero inyectar cuesta el doble.", "+10 emplacements dans la chambre, mais l'injection coûte le double."],
+            ["Universo Instável", "Unstable Universe", "Universo inestable", "Univers instable"],
+            ["Sem Colisor Automático, mas a produção é o dobro.", "No Auto Collider, but production is doubled.", "Sin colisor automático, pero la producción se duplica.", "Pas de collisionneur auto, mais la production est doublée."],
+            ["Universo Veloz", "Fast Universe", "Universo veloz", "Univers rapide"],
+            ["A Síntese Contínua é 2x mais rápida, mas as melhorias custam 50% mais.", "Continuous Synthesis is 2x faster, but upgrades cost 50% more.", "La síntesis continua es 2x más rápida, pero las mejoras cuestan un 50% más.", "La synthèse continue est 2x plus rapide, mais les améliorations coûtent 50% de plus."],
+            ["Universo Sortudo", "Lucky Universe", "Universo afortunado", "Univers chanceux"],
+            ["Isótopos 5x mais prováveis, mas a produção é 20% menor.", "Isotopes 5x more likely, but production is 20% lower.", "Isótopos 5 veces más probables, pero la producción es un 20% menor.", "Isotopes 5 fois plus probables, mais production 20% plus faible."],
+            ["Universo Rico", "Rich Universe", "Universo rico", "Univers riche"],
+            ["Os toques dão 3x mais energia, mas as melhorias custam 25% mais.", "Taps give 3x more energy, but upgrades cost 25% more.", "Los toques dan 3x más energía, pero las mejoras cuestan un 25% más.", "Les touches donnent 3x plus d'énergie, mais les améliorations coûtent 25% de plus."],
+            ["Regra do universo", "Universe rule", "Regla del universo", "Règle de l'univers"],
+            ["O primeiro universo não tem regra.", "The first universe has no rule.", "El primer universo no tiene regla.", "Le premier univers n'a pas de règle."],
+            ["Árvore Cósmica", "Cosmic Tree", "Árbol cósmico", "Arbre cosmique"],
+            ["Cada Big Bang dá pontos para gastares em melhorias permanentes.", "Each Big Bang gives points to spend on permanent upgrades.", "Cada Big Bang da puntos para gastar en mejoras permanentes.", "Chaque Big Bang donne des points à dépenser en améliorations permanentes."],
+            ["Pontos cósmicos: #", "Cosmic points: #", "Puntos cósmicos: #", "Points cosmiques : #"],
+            ["Pontos cósmicos", "Cosmic points", "Puntos cósmicos", "Points cosmiques"],
+            ["Nova regra", "New rule", "Nueva regla", "Nouvelle règle"],
+            ["Redistribuir pontos", "Respec points", "Redistribuir puntos", "Redistribuer les points"],
+            ["Fonte Cósmica", "Cosmic Source", "Fuente cósmica", "Source cosmique"],
+            ["Caçador de Cometas", "Comet Hunter", "Cazador de cometas", "Chasseur de comètes"],
+            ["Laboratório Cósmico", "Cosmic Lab", "Laboratorio cósmico", "Laboratoire cosmique"],
+            ["Fusão Cósmica", "Cosmic Fusion", "Fusión cósmica", "Fusion cosmique"],
+            ["Produção +#%", "Production +#%", "Producción +#%", "Production +#%"],
+            ["Cometas surgem #% mais depressa", "Comets appear #% faster", "Los cometas aparecen un #% más rápido", "Les comètes apparaissent #% plus vite"],
+            ["Recompensas de cometas +#%", "Comet rewards +#%", "Recompensas de cometas +#%", "Récompenses de comètes +#%"],
+            ["+# espaços na câmara", "+# chamber slots", "+# espacios en la cámara", "+# emplacements dans la chambre"],
+            ["A injeção custa #% menos", "Injection costs #% less", "La inyección cuesta un #% menos", "L'injection coûte #% de moins"],
+            ["As melhorias custam #% menos", "Upgrades cost #% less", "Las mejoras cuestan un #% menos", "Les améliorations coûtent #% de moins"],
+            ["Colisor #% mais rápido", "Collider #% faster", "Colisor un #% más rápido", "Collisionneur #% plus rapide"],
+            ["+#% de chance de salto de nível", "+#% level-jump chance", "+#% de probabilidad de salto de nivel", "+#% de chance de saut de niveau"],
+            ["Isótopos #x mais prováveis", "Isotopes #x more likely", "Isótopos #x más probables", "Isotopes #x plus probables"],
             ["Já usaste as caixas extra de hoje.", "You've used today's extra crates.", "Ya usaste las cajas extra de hoy.", "Tu as utilisé les caisses bonus du jour."],
             ["Anúncio não concluído. Tenta outra vez.", "Ad not completed. Try again.", "Anuncio no completado. Inténtalo de nuevo.", "Publicité non terminée. Réessaie."],
             ["Caixa extra", "Extra crate", "Caja extra", "Caisse bonus"], ["Vê um anúncio e abre mais uma caixa grátis.", "Watch an ad and open one more free crate.", "Mira un anuncio y abre otra caja gratis.", "Regarde une pub et ouvre une caisse gratuite de plus."],
@@ -3688,6 +3724,106 @@
             if (el._v !== msg) { el._v = msg; el.textContent = msg; el.classList.toggle('hidden', !msg); }
         }
 
+        /* ---- Universos com regras (uma por galáxia) e Árvore Cósmica ---- */
+        const RULES = [
+            { id: 'cold',     name: 'Universo Frio',     desc: 'Cometas 2x mais frequentes e com recompensas 2x maiores, mas a produção é 30% menor.', prod: 0.7, comet: 0.5, yield: 2 },
+            { id: 'dense',    name: 'Universo Denso',    desc: '+10 espaços na câmara, mas injetar custa o dobro.', cap: 10, spawn: 2 },
+            { id: 'unstable', name: 'Universo Instável', desc: 'Sem Colisor Automático, mas a produção é o dobro.', noCollider: true, prod: 2 },
+            { id: 'fast',     name: 'Universo Veloz',    desc: 'A Síntese Contínua é 2x mais rápida, mas as melhorias custam 50% mais.', autoSpawn: 0.5, cost: 1.5 },
+            { id: 'lucky',    name: 'Universo Sortudo',  desc: 'Isótopos 5x mais prováveis, mas a produção é 20% menor.', iso: 5, prod: 0.8 },
+            { id: 'rich',     name: 'Universo Rico',     desc: 'Os toques dão 3x mais energia, mas as melhorias custam 25% mais.', tap: 3, cost: 1.25 }
+        ];
+        let ruleCacheN = -1, ruleCacheV = null;
+        function currentRule() {
+            const n = state.stats.bigBangs;
+            if (n !== ruleCacheN) { ruleCacheN = n; ruleCacheV = n === 0 ? null : RULES[Math.floor(seededRng('regra' + n)() * RULES.length)]; } // o 1.º universo é livre
+            return ruleCacheV;
+        }
+        function ruleVal(k, d) { const r = currentRule(); return r && r[k] !== undefined ? r[k] : d; }
+
+        // Cada ramo tem 3 níveis que se compram por ordem. Valores somam-se por tipo.
+        const COSMIC_TREE = [
+            { id: 'prod',   name: 'Fonte Cósmica',      icon: 'fa-sun',     levels: [{ cost: 1, type: 'prod', v: 15 }, { cost: 1, type: 'prod', v: 25 }, { cost: 2, type: 'prod', v: 40 }],
+              text: (l) => `Produção +${l.v}%` },
+            { id: 'comet',  name: 'Caçador de Cometas', icon: 'fa-meteor',  levels: [{ cost: 1, type: 'freq', v: 30 }, { cost: 1, type: 'freq', v: 20 }, { cost: 2, type: 'yield', v: 100 }],
+              text: (l) => l.type === 'freq' ? `Cometas surgem ${l.v}% mais depressa` : `Recompensas de cometas +${l.v}%` },
+            { id: 'lab',    name: 'Laboratório Cósmico', icon: 'fa-flask',  levels: [{ cost: 1, type: 'cap', v: 4 }, { cost: 1, type: 'spawn', v: 25 }, { cost: 2, type: 'cost', v: 20 }],
+              text: (l) => l.type === 'cap' ? `+${l.v} espaços na câmara` : l.type === 'spawn' ? `A injeção custa ${l.v}% menos` : `As melhorias custam ${l.v}% menos` },
+            { id: 'fusion', name: 'Fusão Cósmica',      icon: 'fa-atom',    levels: [{ cost: 1, type: 'merge', v: 30 }, { cost: 1, type: 'jump', v: 5 }, { cost: 2, type: 'iso', v: 2 }],
+              text: (l) => l.type === 'merge' ? `Colisor ${l.v}% mais rápido` : l.type === 'jump' ? `+${l.v}% de chance de salto de nível` : `Isótopos ${l.v}x mais prováveis` }
+        ];
+        function cosmicSum(type) {
+            let t = 0;
+            COSMIC_TREE.forEach(b => { const lv = state.cosmicTree[b.id] || 0; for (let i = 0; i < lv; i++) if (b.levels[i].type === type) t += b.levels[i].v; });
+            return t;
+        }
+        function getCostScale() { return BALANCE.costScale * ruleVal('cost', 1) * (1 - cosmicSum('cost') / 100); }
+        function spawnPriceMult() { return ruleVal('spawn', 1) * (1 - cosmicSum('spawn') / 100); }
+        function cometFreqMult() { return Math.max(0.2, ruleVal('comet', 1) * (1 - cosmicSum('freq') / 100)) * (hasCompound('glucose') ? 0.8 : 1); }
+        function cometYieldMult() { return ruleVal('yield', 1) * (1 + cosmicSum('yield') / 100); }
+
+        function buyCosmic(id) {
+            const b = COSMIC_TREE.find(x => x.id === id);
+            if (!b) return false;
+            const lv = state.cosmicTree[id] || 0;
+            if (lv >= b.levels.length || state.cosmicPoints < b.levels[lv].cost) return false;
+            state.cosmicPoints -= b.levels[lv].cost;
+            state.cosmicTree[id] = lv + 1;
+            sfx.playDiscovery();
+            saveGame();
+            updateUI();
+            return true;
+        }
+        function respecCosmic() { // redistribuir é grátis: devolve todos os pontos gastos
+            let spent = 0;
+            COSMIC_TREE.forEach(b => { const lv = state.cosmicTree[b.id] || 0; for (let i = 0; i < lv; i++) spent += b.levels[i].cost; });
+            state.cosmicPoints += spent;
+            state.cosmicTree = {};
+            saveGame();
+            updateUI();
+        }
+
+        let cosmicKey = '';
+        function buildCosmicUI() {
+            const host = document.createElement('div');
+            host.className = 'pt-3 space-y-2';
+            host.innerHTML = `<div id="rule-card" class="p-3 rounded-2xl bg-slate-900/80 border border-fuchsia-900/50 space-y-0.5"></div>
+                <div class="flex items-center justify-between px-1 pt-1"><div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Árvore Cósmica</h2>
+                    <p class="text-[11px] text-slate-500">Cada Big Bang dá pontos para gastares em melhorias permanentes.</p></div>
+                    <span id="cosmic-points" class="text-[11px] font-mono-num px-2 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60 shrink-0"></span></div>
+                <div id="cosmic-tree" class="space-y-2"></div>
+                <button id="btn-cosmic-respec" class="btn-press w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">Redistribuir pontos</button>`;
+            document.getElementById('tab-prestige').appendChild(host);
+            document.getElementById('btn-cosmic-respec').addEventListener('click', respecCosmic);
+        }
+
+        function updateCosmicUI() {
+            if (document.getElementById('tab-prestige').classList.contains('hidden')) return;
+            const key = `${state.stats.bigBangs}|${state.cosmicPoints}|${JSON.stringify(state.cosmicTree)}|${currentLang}`;
+            if (key === cosmicKey) return;
+            cosmicKey = key;
+            const r = currentRule();
+            document.getElementById('rule-card').innerHTML = r
+                ? `<div class="text-[10px] uppercase tracking-wider text-fuchsia-300">Regra do universo</div><div class="text-sm font-bold text-white">${r.name}</div><div class="text-[11px] text-slate-300 leading-snug">${r.desc}</div>`
+                : '<div class="text-[11px] text-slate-400">O primeiro universo não tem regra.</div>';
+            document.getElementById('cosmic-points').textContent = `Pontos cósmicos: ${state.cosmicPoints}`;
+            document.getElementById('cosmic-tree').innerHTML = COSMIC_TREE.map(b => {
+                const lv = state.cosmicTree[b.id] || 0, next = b.levels[lv];
+                const rows = b.levels.map((l, i) => `<div class="text-[11px] ${i < lv ? 'text-emerald-300' : (i === lv ? 'text-slate-200' : 'text-slate-500')}">${i < lv ? '✔' : '•'} ${b.text(l)}</div>`).join('');
+                const btn = next ? `<button id="cosmic-buy-${b.id}" class="btn-press px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-xs font-mono-num font-bold text-slate-950 shrink-0" ${state.cosmicPoints < next.cost ? 'disabled' : ''}>${next.cost} pts</button>` : '<span class="text-emerald-300 text-sm shrink-0">✔</span>';
+                return `<div class="p-3 rounded-2xl bg-slate-900/80 border border-amber-900/40 flex items-center justify-between gap-3">
+                    <div class="min-w-0"><div class="text-sm font-semibold text-white"><i class="fa-solid ${b.icon} text-amber-300 mr-1.5"></i>${b.name}</div>${rows}</div>${btn}</div>`;
+            }).join('');
+            COSMIC_TREE.forEach(b => { const e = document.getElementById(`cosmic-buy-${b.id}`); if (e) e.addEventListener('click', () => buyCosmic(b.id)); });
+        }
+
+        function updateRuleBadge() {
+            const el = document.getElementById('rule-badge'), r = currentRule();
+            el.classList.toggle('hidden', !r);
+            if (r && el._v !== r.name + currentLang) { el._v = r.name + currentLang; el.textContent = tr(r.name); }
+        }
+
         function hydrateState(parsed) {
             const base = getDefaultState();
             const s = Object.assign(base, parsed);
@@ -4345,7 +4481,7 @@
 
             // 4. Auto-Collider Timer
             if (isAutoMergeActive()) {
-                const mergeInterval = AUTO_MERGE_INTERVAL;
+                const mergeInterval = AUTO_MERGE_INTERVAL * (1 - cosmicSum('merge') / 100);
                 autoMergeTimer += dt;
                 if (autoMergeTimer >= mergeInterval) {
                     const pair = findMergeablePair();
@@ -4373,7 +4509,7 @@
                     // Remove the two old particles and spawn the higher tier one
                     liveParticles = liveParticles.filter(p => p !== anim.p1 && p !== anim.p2);
                     const newP = createLiveParticle(anim.nextTier, midX, midY);
-                    if (Math.random() < (hasCompound('mox') ? 0.03 : 0.01)) { newP.iso = true; registerIsotope(anim.nextTier, midX, midY); }
+                    if (Math.random() < (hasCompound('mox') ? 0.03 : 0.01) * ruleVal('iso', 1) * Math.max(1, cosmicSum('iso'))) { newP.iso = true; registerIsotope(anim.nextTier, midX, midY); }
                     liveParticles.push(newP);
                     syncLiveParticlesToState();
 
@@ -4722,6 +4858,8 @@
             updateAdsUI();
             updateBlockBanner();
             updateAtlasUI();
+            updateCosmicUI();
+            updateRuleBadge();
             updateInjectPicker();
             updateTutorial();
             applyAccordions();
@@ -4839,7 +4977,10 @@
 
             state.primordialMatter += gain;
             state.galaxyBest[state.stats.bigBangs] = state.unlockedMaxTier; // elemento mais alto desta galáxia
+            const earnedCP = state.stats.bigBangs === 0 ? 1 : 2; // 1 pelo Big Bang + 1 por concluir um universo com regra
+            state.cosmicPoints += earnedCP;
             state.stats.bigBangs++;
+            { const nr = currentRule(); showShopToast(`${tr('Pontos cósmicos')}: +${earnedCP}` + (nr ? ` · ${tr('Nova regra')}: ${tr(nr.name)}` : '')); }
             grantEther(1 + Math.floor(gain / 20), rect.width / 2, rect.height / 2 - 20);
 
             // Reset run-specific state
@@ -4876,6 +5017,7 @@
             buildOffersUI();
             buildAdsUI();
             setupAds();
+            buildCosmicUI();
             buildAtlasUI();
             buildResearchUI();
             buildRecipesUI();
